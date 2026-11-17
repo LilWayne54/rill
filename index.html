@@ -1,0 +1,1287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Rill">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#e6dfd3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#161513" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>Rill</title>
+<style>
+@font-face{font-family:"Rill UI";src:url(fonts/ui.woff2) format("woff2");font-weight:200 800;font-display:swap}
+@font-face{font-family:"Rill Read";src:url(fonts/read.woff2) format("woff2");font-weight:200 800;font-display:swap}
+@font-face{font-family:"Rill Read";src:url(fonts/read-italic.woff2) format("woff2");font-weight:200 800;font-style:italic;font-display:swap}
+/* One accent: gold, as on Hone's pin. Gold means "on": a running sprint, a lock that is actually blocking. */
+:root{
+  --ground:#e6dfd3; --paper:#fffdf9; --raise:#ffffff; --ink:#24211d; --muted:#857d73; --faint:#b3aba0;
+  --line:rgba(36,33,29,.10); --field:rgba(36,33,29,.055); --press:rgba(36,33,29,.09);
+  --gold:#a8771c; --gold-fill:#e0aa45; --gold-soft:rgba(224,170,69,.2); --gold-ink:#2b1d03;
+  --glass:rgba(255,253,249,.82); --shadow:rgba(60,44,20,.22); --ok:#3d8a5c; --bad:#c2453b;
+  --ui:"Rill UI",ui-sans-serif,-apple-system,system-ui,sans-serif;
+  --read:"Rill Read","Iowan Old Style",Georgia,serif;
+  --spring:cubic-bezier(.34,1.56,.64,1);
+  --kb:0px; --safe-b:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){
+  --ground:#161513; --paper:#1e1c1a; --raise:#272522; --ink:#efebe5; --muted:#9d958b; --faint:#6b645c;
+  --line:rgba(239,235,229,.10); --field:rgba(239,235,229,.065); --press:rgba(239,235,229,.12);
+  --gold:#e8b85a; --gold-fill:#e8b85a; --gold-soft:rgba(232,184,90,.18); --gold-ink:#241800;
+  --glass:rgba(34,32,29,.78); --shadow:rgba(0,0,0,.5); --ok:#6cc08b; --bad:#ff7066; color-scheme:dark}}
+:root[data-theme=dark]{
+  --ground:#161513; --paper:#1e1c1a; --raise:#272522; --ink:#efebe5; --muted:#9d958b; --faint:#6b645c;
+  --line:rgba(239,235,229,.10); --field:rgba(239,235,229,.065); --press:rgba(239,235,229,.12);
+  --gold:#e8b85a; --gold-fill:#e8b85a; --gold-soft:rgba(232,184,90,.18); --gold-ink:#241800;
+  --glass:rgba(34,32,29,.78); --shadow:rgba(0,0,0,.5); --ok:#6cc08b; --bad:#ff7066; color-scheme:dark}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{background:var(--ground);color:var(--ink);font:15px/1.45 var(--ui);-webkit-font-smoothing:antialiased;overflow:hidden;position:fixed;inset:0;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;padding:0;touch-action:manipulation}
+input,textarea{-webkit-user-select:text;user-select:text}
+h1,h2,h3,p{margin:0}
+svg{display:block}
+:focus-visible{outline:2px solid var(--gold-fill);outline-offset:2px}
+.view{position:absolute;inset:0;display:flex;flex-direction:column}
+
+/* tactile press: everything you can tap sinks a little and springs back */
+.tap{transition:transform .32s var(--spring),background-color .2s,box-shadow .2s,color .2s}
+.tap:active{transform:scale(.92);transition-duration:.08s}
+
+/* ---------- shelf ---------- */
+.shelf-head{padding:calc(env(safe-area-inset-top,0px) + 22px) 22px 10px;display:flex;align-items:flex-end;gap:12px}
+.brand{font:750 30px/1 var(--ui);letter-spacing:-.025em;display:flex;align-items:center;gap:10px}
+.pin{width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe6a8,var(--gold-fill) 45%,#9c6a12);box-shadow:0 2px 5px rgba(120,80,10,.35),inset 0 -1px 1px rgba(0,0,0,.2);flex:none}
+.shelf-head .gap{flex:1}
+.shelf-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 16px calc(var(--safe-b) + 110px)}
+.cards{display:grid;gap:10px}
+.card{display:flex;align-items:stretch;background:var(--paper);border-radius:18px;box-shadow:0 1px 0 var(--line),0 8px 22px -14px var(--shadow);overflow:hidden;text-align:left;width:100%}
+.card .open{flex:1;min-width:0;padding:15px 4px 15px 17px;text-align:left}
+.card h3{font:620 16.5px/1.25 var(--ui);letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card p{font:400 14.5px/1.4 var(--read);color:var(--muted);margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:1.4em}
+.card .meta{font:500 11.5px/1 var(--ui);color:var(--faint);margin-top:9px;letter-spacing:.01em}
+.card .more{width:46px;display:grid;place-items:center;color:var(--faint)}
+.card .more:active{background:var(--field)}
+.empty{text-align:center;padding:70px 30px;color:var(--muted)}
+.empty .big{font:400 italic 23px/1.3 var(--read);color:var(--ink);margin-bottom:8px}
+.running{display:flex;align-items:center;gap:10px;margin:0 0 12px;padding:12px 15px;border-radius:16px;background:var(--gold-soft);color:var(--ink);width:100%;text-align:left;font-weight:600}
+.running b{font-variant-numeric:tabular-nums;color:var(--gold)}
+.shelf-bar{position:absolute;left:0;right:0;bottom:0;padding:12px 16px calc(var(--safe-b) + 14px);display:flex;gap:10px;background:linear-gradient(to top,var(--ground) 55%,transparent)}
+
+/* ---------- buttons ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:50px;padding:0 20px;border-radius:16px;background:var(--paper);font:640 15.5px var(--ui);box-shadow:0 1px 0 var(--line),0 6px 16px -10px var(--shadow)}
+.btn.gold{background:linear-gradient(180deg,#f0c062,var(--gold-fill));color:var(--gold-ink);box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 1px 0 rgba(120,80,10,.25),0 10px 22px -12px rgba(160,110,20,.7)}
+.btn.wide{flex:1}
+.btn.soft{background:var(--field);box-shadow:none}
+.btn.danger{color:var(--bad)}
+.btn:disabled{opacity:.45}
+.icon{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;color:var(--ink);flex:none;position:relative}
+.icon:active{background:var(--press)}
+.icon svg{width:21px;height:21px}
+
+/* ---------- editor ---------- */
+.top{display:flex;align-items:center;gap:4px;padding:calc(env(safe-area-inset-top,0px) + 6px) 8px 6px;background:var(--ground);position:relative;z-index:5}
+.title{flex:1;min-width:0;border:0;background:transparent;font:650 16.5px var(--ui);letter-spacing:-.01em;padding:8px 6px;border-radius:10px;text-align:center;text-overflow:ellipsis}
+.title:focus{outline:none;background:var(--field)}
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 12px calc(var(--kb) + var(--safe-b) + 170px);overscroll-behavior:contain}
+.page{max-width:720px;margin:0 auto;background:var(--paper);border-radius:6px 6px 20px 20px;box-shadow:0 0 0 1px rgba(60,44,20,.07),0 1px 2px rgba(60,44,20,.08),0 22px 48px -26px var(--shadow);min-height:calc(100% - 10px);padding:30px 24px 60vh;position:relative;transition:filter .4s,opacity .4s}
+.ed{white-space:pre-wrap;tab-size:2.4em;-moz-tab-size:2.4em;outline:none;font:400 19px/1.62 var(--read);color:var(--ink);-webkit-user-select:text;user-select:text;caret-color:var(--gold-fill);min-height:60vh;word-wrap:break-word}
+.ed p,.ed div{margin:0 0 .55em}
+.ed h1{font:700 1.5em/1.2 var(--read);margin:.4em 0 .5em;letter-spacing:-.01em}
+.ed h2{font:650 1.25em/1.25 var(--read);margin:.5em 0 .45em}
+.ed h3{font:600 italic 1.08em/1.3 var(--read);margin:.5em 0 .4em}
+.ed ul,.ed ol{margin:0 0 .6em;padding-left:1.3em}
+.ed:empty::before{content:attr(data-ph);color:var(--faint);font-style:italic}
+.page.locked{filter:saturate(.7);opacity:.8}
+.page.paged.locked{opacity:.85}
+.page.locked .ed{opacity:.7}
+.page.bump{animation:bump .3s}
+@keyframes bump{30%{transform:translateX(-3px)}60%{transform:translateX(2px)}}
+
+/* time lock banner */
+.tlock{margin:6px 12px 2px;padding:10px 10px 10px 16px;border-radius:16px;background:var(--gold-soft);display:flex;align-items:center;gap:10px;font-weight:600;position:relative;z-index:4}
+.tlock .t{flex:1}
+.tlock .t small{display:block;font-weight:500;font-size:12px;color:var(--muted)}
+.tlock b{font-variant-numeric:tabular-nums;color:var(--gold)}
+.hold{position:relative;overflow:hidden;padding:0 14px;min-height:40px;border-radius:12px;background:var(--paper);font:620 13px var(--ui);box-shadow:0 1px 0 var(--line)}
+.hold i{position:absolute;inset:0;background:var(--gold-fill);transform-origin:left;transform:scaleX(0);opacity:.55}
+.hold span{position:relative}
+
+/* dock: a glass bar that rides just above the keyboard */
+.dock{position:absolute;left:10px;right:10px;bottom:calc(var(--kb) + max(10px,var(--safe-b)));z-index:10;display:flex;flex-direction:column;gap:8px;pointer-events:none;transition:bottom .12s}
+.dock>*{pointer-events:auto}
+.bar{display:flex;align-items:center;gap:4px;padding:6px;border-radius:22px;background:var(--glass);-webkit-backdrop-filter:blur(22px) saturate(1.6);backdrop-filter:blur(22px) saturate(1.6);box-shadow:0 0 0 .5px var(--line),0 14px 34px -14px var(--shadow)}
+.fmt{align-self:center;padding:4px;border-radius:18px;gap:2px}
+.fmt .icon{width:44px;height:38px;border-radius:12px;font:700 16px var(--read)}
+.fmt .icon.on{background:var(--gold-soft);color:var(--gold)}
+.fmt .sep{width:1px;height:20px;background:var(--line);margin:0 3px}
+.pill{display:flex;align-items:center;gap:9px;height:44px;padding:0 15px 0 8px;border-radius:16px;font:650 15px var(--ui);font-variant-numeric:tabular-nums}
+.pill:active{background:var(--press)}
+.pill .ring{width:30px;height:30px}
+.pill.on{background:var(--gold-soft)}
+.pill.on .lbl{color:var(--gold)}
+.words{flex:1;text-align:center;font:500 12.5px var(--ui);color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden}
+.words b{color:var(--gold);font-weight:650}
+.lockbtn{width:auto;min-width:44px;padding:0 10px;gap:6px;display:flex;font:650 13px var(--ui);font-variant-numeric:tabular-nums;color:var(--muted)}
+.lockbtn.armed{color:var(--ink)}
+.lockbtn.blocking{color:var(--gold);background:var(--gold-soft)}
+.lockbtn.bump{animation:jig .35s}
+@keyframes jig{25%{transform:rotate(-12deg)}55%{transform:rotate(9deg)}80%{transform:rotate(-4deg)}}
+.badge{position:absolute;top:4px;right:3px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--gold-fill);color:var(--gold-ink);font:700 10.5px/17px var(--ui);text-align:center}
+
+/* ---------- sheets ---------- */
+.scrim{position:fixed;inset:0;background:rgba(20,16,10,.28);z-index:40;opacity:0;transition:opacity .28s}
+.scrim.show{opacity:1}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;max-height:calc(100% - env(safe-area-inset-top,0px) - 30px);display:flex;flex-direction:column;background:var(--ground);border-radius:28px 28px 0 0;box-shadow:0 -20px 50px -20px var(--shadow);transform:translateY(105%);transition:transform .42s var(--spring);max-width:640px;margin:0 auto}
+.sheet.show{transform:none}
+.sheet.drag{transition:none}
+.grab{padding:10px 0 4px;display:grid;place-items:center;touch-action:none}
+.grab::before{content:"";width:38px;height:5px;border-radius:3px;background:var(--faint);opacity:.6}
+.sheet-head{display:flex;align-items:center;padding:2px 18px 8px;gap:10px;touch-action:none}
+.sheet-head h2{flex:1;font:720 21px var(--ui);letter-spacing:-.02em}
+.sheet-body{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 16px calc(var(--safe-b) + 22px);overscroll-behavior:contain}
+.group{background:var(--paper);border-radius:20px;padding:4px 16px;box-shadow:0 1px 0 var(--line);margin-bottom:14px}
+.row{display:flex;align-items:center;gap:12px;min-height:54px;padding:6px 0}
+.row+.row{border-top:1px solid var(--line)}
+.row .lbl{flex:1;font-weight:560}
+.row .lbl small{display:block;font-weight:450;font-size:12.5px;color:var(--muted);line-height:1.35}
+.kick{font:700 11px/1 var(--ui);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:16px 6px 9px}
+
+/* switch */
+.sw{width:52px;height:32px;border-radius:16px;background:var(--press);position:relative;flex:none;transition:background .25s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:28px;height:28px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.22);transition:transform .38s var(--spring),width .2s}
+.sw:active::after{width:33px}
+.sw[aria-checked=true]{background:var(--gold-fill)}
+.sw[aria-checked=true]::after{transform:translateX(20px)}
+.sw[aria-checked=true]:active::after{transform:translateX(15px)}
+
+/* segmented */
+.seg{display:flex;padding:3px;border-radius:13px;background:var(--field);position:relative;width:100%}
+.seg button{flex:1;height:36px;border-radius:10px;font:600 13.5px var(--ui);color:var(--muted);position:relative;z-index:1;transition:color .2s}
+.seg button[aria-pressed=true]{color:var(--ink)}
+.seg i{position:absolute;top:3px;bottom:3px;border-radius:10px;background:var(--raise);box-shadow:0 1px 3px rgba(0,0,0,.12);transition:left .38s var(--spring),width .38s var(--spring)}
+
+.num{width:58px;height:38px;border:0;border-radius:11px;background:var(--field);text-align:center;font:650 16px var(--ui);font-variant-numeric:tabular-nums;-moz-appearance:textfield}
+.num::-webkit-inner-spin-button{display:none}
+.num:focus{outline:2px solid var(--gold-fill)}
+.loopline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-weight:500;color:var(--muted);padding:2px 0 12px}
+.loopline b{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--ink)}
+.loopline b.g{color:var(--gold)}
+.ptsrow{border-top:1px solid var(--line)}
+.help{font-size:12.5px;line-height:1.4;color:var(--muted);margin:-2px 2px 10px}
+.tlock.edit{background:var(--field)}
+.flowline{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:14px 2px 10px;font:600 13px var(--ui);color:var(--muted)}
+.flowline .fs{padding:4px 10px;border-radius:9px;background:var(--field);color:var(--ink);font-variant-numeric:tabular-nums}
+.flowline .fs.sprint{background:var(--gold-fill);color:var(--gold-ink)}
+.flowline .fs.rest{background:var(--gold-soft);color:var(--gold)}
+.flowline .ar{color:var(--faint);font-weight:400}
+.flowline .rp{color:var(--gold);font-size:15px}
+.stepsList{display:grid;gap:0}
+.srow{display:flex;align-items:center;gap:8px;min-height:50px;border-top:1px solid var(--line)}
+.srow .n{width:18px;color:var(--faint);font:600 12px var(--ui);text-align:center}
+.srow .kind{min-width:76px;height:34px;padding:0 12px;border-radius:10px;background:var(--field);font:650 14px var(--ui);display:flex;align-items:center;gap:6px}
+.srow .kind.rest{background:var(--gold-soft);color:var(--gold)}
+.srow .kind svg{width:15px;height:15px}
+.srow .mins{display:flex;align-items:center;gap:6px;color:var(--muted);font-weight:500;flex:1}
+.srow .sb{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:var(--muted)}
+.srow .sb:active{background:var(--field)}
+.srow .sb svg{width:17px;height:17px}
+.srow.now .n{color:var(--gold)}
+.addrow{display:flex;gap:8px;padding:10px 0 12px;border-top:1px solid var(--line)}
+.addrow .chip{flex:1}
+.stepsList:empty+.addrow{border-top:0}
+.tlock .go{padding:0 14px;min-height:40px;border-radius:12px;background:var(--paper);font:620 13px var(--ui);box-shadow:0 1px 0 var(--line)}
+.pbar{flex:1;height:8px;border-radius:4px;background:var(--field);overflow:hidden}
+.pbar i{display:block;height:100%;width:0;background:var(--gold-fill);border-radius:4px;transition:width .3s var(--spring)}
+#ptsLine b{margin-left:4px;min-width:72px;text-align:right}
+.lockbtn .ptn{font-variant-numeric:tabular-nums}
+
+/* dial */
+.dialwrap{display:grid;place-items:center;padding:6px 0 8px}
+.dial{width:min(270px,72vw);height:min(270px,72vw);touch-action:none;position:relative}
+.dial svg{width:100%;height:100%;overflow:visible}
+.dial .center{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+.dial .center div{display:flex;flex-direction:column;align-items:center;pointer-events:auto}
+.dial input{width:150px;border:0;background:transparent;text-align:center;font:300 64px/1 var(--ui);letter-spacing:-.04em;font-variant-numeric:tabular-nums;padding:0;-moz-appearance:textfield}
+.dial input::-webkit-inner-spin-button{display:none}
+.dial input:focus{outline:none}
+.dial .unit{font:600 12px var(--ui);color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-top:2px}
+.thumb{transition:r .2s var(--spring)}
+.dial.dragging .thumb{r:17}
+.chips{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin:6px 0 16px}
+.chip{height:36px;padding:0 14px;border-radius:12px;background:var(--paper);font:620 14px var(--ui);box-shadow:0 1px 0 var(--line);font-variant-numeric:tabular-nums}
+.chip.on{background:var(--gold-soft);color:var(--gold);box-shadow:none}
+.count{font:250 72px/1 var(--ui);letter-spacing:-.04em;text-align:center;font-variant-numeric:tabular-nums;margin:18px 0 6px}
+.count+small{display:block;text-align:center;color:var(--muted);font-weight:500;margin-bottom:16px}
+.prog{height:8px;border-radius:4px;background:var(--field);overflow:hidden;margin:0 6px 18px}
+.prog i{display:block;height:100%;background:var(--gold-fill);border-radius:4px;transform-origin:left;transition:transform .25s linear}
+.btnrow{display:flex;gap:10px}
+
+/* critiques */
+.addbox{background:var(--paper);border-radius:20px;padding:12px 12px 10px 16px;box-shadow:0 1px 0 var(--line);margin-bottom:12px}
+.addbox textarea{width:100%;border:0;background:transparent;resize:none;font:400 17px/1.4 var(--read);min-height:52px;outline:none;padding:2px 0}
+.addbox .r{display:flex;align-items:center;gap:8px}
+.addbox .r small{flex:1;color:var(--muted);font-size:12.5px}
+.addbox .btn{min-height:40px;padding:0 16px;border-radius:12px;font-size:14.5px}
+.clist{display:grid;gap:0;background:var(--paper);border-radius:20px;box-shadow:0 1px 0 var(--line);overflow:hidden}
+.crit{display:flex;gap:12px;padding:13px 10px 13px 14px;align-items:flex-start;position:relative}
+.crit+.crit{border-top:1px solid var(--line)}
+.check{width:26px;height:26px;border-radius:50%;border:2px solid var(--faint);flex:none;display:grid;place-items:center;margin-top:1px;transition:background .25s,border-color .25s,transform .35s var(--spring)}
+.check svg{width:14px;height:14px;opacity:0;transform:scale(.4);transition:all .35s var(--spring);color:var(--gold-ink)}
+.crit.done .check{background:var(--gold-fill);border-color:var(--gold-fill)}
+.crit.done .check svg{opacity:1;transform:none}
+.crit .tx{flex:1;min-width:0}
+.crit .tx p{font:400 16.5px/1.38 var(--read);white-space:pre-wrap;word-wrap:break-word;transition:color .3s}
+.crit.done .tx p{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--faint)}
+.crit .tx small{display:block;color:var(--faint);font-size:11.5px;margin-top:4px;font-weight:500}
+.crit .x{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;color:var(--faint);flex:none;margin-top:-3px}
+.crit .x:active{background:var(--field);color:var(--bad)}
+.none{padding:22px 16px;text-align:center;color:var(--muted);font:italic 16px var(--read)}
+.fold{width:100%;text-align:left;padding:12px 6px;color:var(--muted);font-weight:600;font-size:13.5px;display:flex;gap:6px;align-items:center}
+.fold svg{width:14px;height:14px;transition:transform .3s var(--spring)}
+.fold.open svg{transform:rotate(90deg)}
+
+/* list sheet (document actions) */
+.acts{display:grid;gap:0;background:var(--paper);border-radius:20px;overflow:hidden;box-shadow:0 1px 0 var(--line)}
+.acts button{display:flex;align-items:center;gap:14px;padding:0 18px;height:56px;font-weight:580;text-align:left}
+.acts button+button{border-top:1px solid var(--line)}
+.acts button:active{background:var(--field)}
+.acts svg{width:20px;height:20px;color:var(--muted)}
+.acts .danger,.acts .danger svg{color:var(--bad)}
+
+/* toast */
+.toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 12px);z-index:60;transform:translate(-50%,-140%);padding:11px 18px;border-radius:16px;background:var(--ink);color:var(--paper);font:600 14px var(--ui);box-shadow:0 12px 30px -10px var(--shadow);transition:transform .45s var(--spring);max-width:calc(100% - 32px);text-align:center;display:flex;align-items:center;gap:10px}
+.toast.show{transform:translate(-50%,0)}
+.toast{pointer-events:none}
+.toast:not(.show){opacity:0}
+.sheet:not(.show){box-shadow:none}
+.toast button{color:var(--gold-fill);font-weight:700;pointer-events:auto}
+
+/* format bar: panels that slide in place, scroll sideways if they don't fit */
+.fmt{align-self:stretch;padding:4px;border-radius:18px;overflow:hidden}
+.fpanel{display:flex;align-items:center;gap:2px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;animation:pin .32s var(--spring)}
+.fpanel::-webkit-scrollbar{display:none}
+@keyframes pin{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+.fmt .icon{width:40px;height:38px;border-radius:12px;font:700 16px var(--read);flex:none}
+.fmt .icon svg{width:20px;height:20px}
+.fmt .wordbtn{width:auto;padding:0 11px;font:620 13.5px var(--ui);white-space:nowrap;gap:4px;display:flex;align-items:center}
+.fmt .wordbtn svg{width:12px;height:12px;opacity:.6}
+.fmt .back{color:var(--muted)}
+.fmt .sep{flex:none}
+.lockbtn{touch-action:none;-webkit-user-select:none}
+/* text settings */
+.ed{font-size:var(--fs,19px);line-height:var(--lh,1.62)}
+.ed.serif{font-family:var(--read)}
+.ed.sans{font-family:var(--ui)}
+.ed.mono{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:calc(var(--fs,19px) * .88)}
+.ed.indent p,.ed.indent div{margin:0;text-indent:1.6em}
+.ed.indent h1+p,.ed.indent h2+p,.ed.indent h3+p,.ed.indent blockquote+p,.ed.indent p[style*=center]{text-indent:0}
+.ed blockquote{margin:.2em 0 .7em;padding:.1em 0 .1em 1em;border-left:3px solid var(--gold-soft);color:color-mix(in srgb,var(--ink) 82%,transparent);font-style:italic}
+.ed blockquote p{margin:0 0 .4em;text-indent:0!important}
+.ed s,.ed strike{text-decoration-color:var(--muted)}
+::highlight(folio-find){background:var(--gold-soft)}
+::highlight(folio-cur){background:var(--gold-fill);color:var(--gold-ink)}
+.range{width:100%;accent-color:var(--gold-fill);height:28px}
+.sizerow{display:flex;align-items:center;gap:12px;padding:8px 0 12px}
+.sizerow span{font-family:var(--read);color:var(--muted);flex:none}
+.findrow{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.field{flex:1;min-width:0;height:46px;border:0;border-radius:14px;background:var(--paper);padding:0 14px;font:400 17px var(--ui);box-shadow:0 1px 0 var(--line)}
+.field:focus{outline:2px solid var(--gold-fill)}
+.findinfo{font:600 13px var(--ui);color:var(--muted);min-width:64px;text-align:center;font-variant-numeric:tabular-nums}
+.sq{width:46px;height:46px;border-radius:14px;background:var(--paper);display:grid;place-items:center;box-shadow:0 1px 0 var(--line);flex:none}
+.sq svg{width:20px;height:20px}
+.scrim.clear{background:transparent}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--paper);border-radius:18px;padding:14px 16px;box-shadow:0 1px 0 var(--line)}
+.stat b{display:block;font:300 30px/1.1 var(--ui);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stat small{color:var(--muted);font-weight:550;font-size:12.5px}
+/* Windows app: the top bars are the window's title bar; Windows draws its buttons at the top right */
+body.desk .top,body.desk .shelf-head{-webkit-app-region:drag;padding-right:150px}
+body.desk .top{padding-top:4px;padding-bottom:4px;min-height:48px}
+body.desk .shelf-head{padding-top:30px}
+body.desk .top>*,body.desk .shelf-head>*{-webkit-app-region:no-drag}
+body.desk .top{position:relative}
+body.desk .top .title{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(520px,calc(100% - 320px))}
+body.desk .top #share{margin-left:auto}
+body.desk .icon:hover,body.desk .pill:hover{background:var(--field)}
+body.desk .chip:hover,body.desk .btn:hover{filter:brightness(1.03)}
+body.desk .card .open:hover h3{color:var(--gold)}
+body.desk .scroll{padding-top:10px;scrollbar-gutter:stable both-edges}
+body.desk .scroll::-webkit-scrollbar{width:10px}
+body.desk .scroll::-webkit-scrollbar-thumb{background:var(--press);border-radius:5px;border:3px solid transparent;background-clip:padding-box}
+body.desk .scroll::-webkit-scrollbar-track{background:transparent}
+body.desk .ed{-webkit-user-select:text}
+#share.dirty::after{content:"";position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--gold-fill)}
+/* page view: letter-size sheets drawn behind the text; spacers (never saved) push text onto the next sheet */
+.pg-sheets{display:none}
+.page.paged{background:transparent;box-shadow:none;border-radius:0;padding:0;max-width:none;width:var(--pw);min-height:0;margin:0 auto}
+.page.paged .pg-sheets{display:block;position:absolute;inset:0 0 auto 0;pointer-events:none}
+.pg-sheet{position:absolute;left:0;width:100%;height:var(--ph);background:var(--paper);border-radius:3px;box-shadow:0 0 0 1px rgba(60,44,20,.07),0 1px 2px rgba(60,44,20,.08),0 18px 40px -26px var(--shadow)}
+.pg-sheet::after{content:attr(data-n);position:absolute;left:0;right:0;bottom:calc(var(--m) * .4);text-align:center;font:500 11px var(--ui);color:var(--faint);font-variant-numeric:tabular-nums}
+.page.paged .ed{position:relative;padding:var(--m);min-height:var(--ph)}
+.pgs{display:block;-webkit-user-select:none;user-select:none;pointer-events:none;margin:0!important;padding:0!important;text-indent:0}
+/* ===== flow layer: while you type, everything but the words steps back ===== */
+body,.top{transition:background-color 1.2s}
+.page{transition:filter .4s,opacity .4s,box-shadow 1.2s}
+body.flowing{--ground:var(--paper)}
+body.flowing .page:not(.paged){box-shadow:none}
+.top>*,.dock{transition:opacity .25s}
+body.hush .top>*,body.hush .dock{opacity:0;transition:opacity .9s}
+.ed>*{transition:opacity .5s}
+body.flowing.fdim .ed>:not(.cur):not(.pgs){opacity:.3}
+body.fquiet.sprinting #pillLbl{display:none}
+body.fquiet.sprinting #pill{padding-right:8px}
+body.fquiet.sprinting #words{visibility:hidden}
+/* the rill: a thin line across the top. Its length is the sprint's time; its glow is your momentum. */
+.rill{position:absolute;left:0;right:0;top:env(safe-area-inset-top,0px);height:3px;z-index:7;pointer-events:none;opacity:0;transition:opacity .6s}
+body.sprinting .rill{opacity:1}
+.rill i{display:block;height:100%;width:0;background:var(--gold-fill);border-radius:0 2px 2px 0;opacity:calc(.22 + .78 * var(--mo,0));box-shadow:0 0 calc(10px * var(--mo,0)) var(--gold-fill);transition:width .3s linear,opacity .5s,box-shadow .5s}
+.rill.over i{animation:rillover 2.4s ease-in-out infinite}
+@keyframes rillover{50%{filter:brightness(1.25)}}
+@media (min-width:700px){.tlock{max-width:720px;width:calc(100% - 24px);margin-left:auto;margin-right:auto}.cards,.running,.empty{max-width:720px;margin-left:auto;margin-right:auto}.running{display:flex}.shelf-bar{max-width:752px;margin:0 auto}.shelf-head{max-width:752px;margin:0 auto;width:100%}body.desk .shelf-head{max-width:none;padding-left:calc(50% - 360px)}.page{padding:56px 64px 60vh}.dock{left:50%;right:auto;width:560px;transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.01s!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ============ SHELF ============ -->
+<section class="view" id="shelf">
+  <header class="shelf-head">
+    <div class="brand"><span class="pin"></span>Rill</div>
+    <div class="gap"></div>
+    <button class="icon tap" id="shelfCrit" aria-label="All critiques"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11.5l2 2 4-4.5"/><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 3.5V17A2.5 2.5 0 0 1 4 14.5z"/></svg><span class="badge" id="shelfBadge" hidden></span></button>
+    <button class="icon tap" id="shelfSettings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h3M11 17h9"/><circle cx="16" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></button>
+  </header>
+  <div class="shelf-scroll">
+    <button class="running tap" id="running" hidden></button>
+    <div class="cards" id="cards"></div>
+    <div class="empty" id="empty" hidden><div class="big">Nothing yet.</div>Start a new page, or open a .docx from Files.</div>
+  </div>
+  <div class="shelf-bar">
+    <button class="btn tap wide" id="openBtn"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5V18a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2V9.5a2 2 0 0 0-2-2H12l-2-2.5H5.5a2 2 0 0 0-2 2z"/></svg>Open .docx</button>
+    <button class="btn gold tap wide" id="newBtn"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New page</button>
+  </div>
+  <input type="file" id="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+</section>
+
+<!-- ============ EDITOR ============ -->
+<section class="view" id="editor" hidden>
+  <div class="rill" id="rill" aria-hidden="true"><i id="rillFill"></i></div>
+  <header class="top">
+    <button class="icon tap" id="back" aria-label="Back to shelf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <input class="title" id="title" spellcheck="false" autocomplete="off" enterkeyhint="done" aria-label="Title">
+    <button class="icon tap" id="share" aria-label="Export .docx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3.5M7.5 8L12 3.5 16.5 8"/><path d="M8 11H6.5A2.5 2.5 0 0 0 4 13.5v4A2.5 2.5 0 0 0 6.5 20h11a2.5 2.5 0 0 0 2.5-2.5v-4a2.5 2.5 0 0 0-2.5-2.5H16"/></svg></button>
+  </header>
+  <div class="tlock" id="tlock" hidden>
+    <div class="t"><span id="brkName">Rest</span> <b id="tlockLeft">0:00</b><small id="brkNote">Writing's paused. Critiques still work.</small></div>
+    <button class="hold" id="hold"><i id="holdFill"></i><span>Hold to unlock</span></button>
+    <button class="go tap" id="brkGo" hidden></button>
+  </div>
+  <div class="scroll" id="scroll">
+    <article class="page" id="page"><div class="pg-sheets" id="sheets" aria-hidden="true"></div><div class="ed" id="ed" contenteditable="true" spellcheck="true" autocapitalize="sentences" data-ph="Begin anywhere."></div></article>
+  </div>
+  <div class="dock" id="dock">
+    <div class="bar fmt" id="fmt" hidden>
+      <div class="fpanel" data-panel="main">
+        <button class="icon" data-cmd="undo" aria-label="Undo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+        <button class="icon" data-cmd="redo" aria-label="Redo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
+        <span class="sep"></span>
+        <button class="icon" data-cmd="bold" aria-label="Bold"><b>B</b></button>
+        <button class="icon" data-cmd="italic" aria-label="Italic"><i style="font-weight:500">I</i></button>
+        <button class="icon" data-cmd="underline" aria-label="Underline"><u style="font-weight:500">U</u></button>
+        <button class="icon" data-cmd="strikeThrough" aria-label="Strikethrough"><s style="font-weight:500">S</s></button>
+        <span class="sep"></span>
+        <button class="icon wordbtn" data-p="style" aria-label="Paragraph style"><span id="styleLbl">Body</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+        <button class="icon" data-p="align" aria-label="Alignment" id="alignBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 10h10M4 14h16M4 18h10"/></svg></button>
+        <button class="icon" data-p="list" aria-label="Lists and indent" id="listBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6.5h10M10 12h10M10 17.5h10"/><circle cx="5" cy="6.5" r="1.2" fill="currentColor"/><circle cx="5" cy="12" r="1.2" fill="currentColor"/><circle cx="5" cy="17.5" r="1.2" fill="currentColor"/></svg></button>
+        <span class="sep"></span>
+        <button class="icon" data-p="more" aria-label="More"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="18.5" cy="12" r="1.3" fill="currentColor"/></svg></button>
+        <button class="icon" data-cmd="done" aria-label="Hide keyboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 10l6 6 6-6"/></svg></button>
+      </div>
+      <div class="fpanel" data-panel="style" hidden><button class="icon back" data-p="main" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d='M15 5l-7 7 7 7'/></svg></button><span class="sep"></span>
+        <button class="icon wordbtn" data-block="p">Body</button>
+        <button class="icon wordbtn" data-block="h1" style="font-weight:800">Heading 1</button>
+        <button class="icon wordbtn" data-block="h2" style="font-weight:700">Heading 2</button>
+        <button class="icon wordbtn" data-block="h3" style="font-style:italic">Heading 3</button>
+        <button class="icon wordbtn" data-block="blockquote" style="font-family:var(--read);font-style:italic">Quote</button>
+      </div>
+      <div class="fpanel" data-panel="align" hidden><button class="icon back" data-p="main" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d='M15 5l-7 7 7 7'/></svg></button><span class="sep"></span>
+        <button class="icon" data-align="left" aria-label="Align left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 10h10M4 14h16M4 18h10"/></svg></button>
+        <button class="icon" data-align="center" aria-label="Center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M7 10h10M4 14h16M7 18h10"/></svg></button>
+        <button class="icon" data-align="right" aria-label="Align right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M10 10h10M4 14h16M10 18h10"/></svg></button>
+        <button class="icon" data-align="justify" aria-label="Justify"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg></button>
+      </div>
+      <div class="fpanel" data-panel="list" hidden><button class="icon back" data-p="main" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d='M15 5l-7 7 7 7'/></svg></button><span class="sep"></span>
+        <button class="icon" data-cmd="insertUnorderedList" aria-label="Bulleted list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6.5h10M10 12h10M10 17.5h10"/><circle cx="5" cy="6.5" r="1.2" fill="currentColor"/><circle cx="5" cy="12" r="1.2" fill="currentColor"/><circle cx="5" cy="17.5" r="1.2" fill="currentColor"/></svg></button>
+        <button class="icon" data-cmd="insertOrderedList" aria-label="Numbered list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6.5h10M10 12h10M10 17.5h10"/><path d="M4.3 4.8h1.3v4" stroke-width="1.6"/><path d="M4 14.6c.4-.8 2.7-.9 2.7.5 0 1-2.7 1.9-2.7 3.1h2.9" stroke-width="1.6"/></svg></button>
+        <span class="sep"></span>
+        <button class="icon" data-cmd="outdent" aria-label="Decrease indent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M11 10h9M11 14h9M4 19h16M8 9.5L5 12l3 2.5"/></svg></button>
+        <button class="icon" data-cmd="indent" aria-label="Increase indent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M11 10h9M11 14h9M4 19h16M5 9.5L8 12l-3 2.5"/></svg></button>
+      </div>
+      <div class="fpanel" data-panel="more" hidden><button class="icon back" data-p="main" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d='M15 5l-7 7 7 7'/></svg></button><span class="sep"></span>
+        <button class="icon wordbtn" data-cmd="scene">⁂ Scene break</button>
+        <button class="icon wordbtn" data-cmd="find"><svg style="width:15px;height:15px;opacity:1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg> Find</button>
+        <button class="icon wordbtn" data-cmd="page"><span style="font-family:var(--read);font-size:15px">Aa</span> Text</button>
+        <button class="icon wordbtn" data-cmd="stats"># Count</button>
+      </div>
+    </div>
+    <div class="bar">
+      <button class="pill" id="pill"><svg class="ring" viewBox="0 0 30 30"><circle cx="15" cy="15" r="11.5" fill="none" stroke="var(--field)" stroke-width="3.5"/><circle id="pillArc" cx="15" cy="15" r="11.5" fill="none" stroke="var(--gold-fill)" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="72.26" stroke-dashoffset="72.26" transform="rotate(-90 15 15)"/><circle cx="15" cy="15" r="3" fill="var(--faint)" id="pillDot"/></svg><span class="lbl" id="pillLbl">Sprint</span></button>
+      <div class="words" id="words">0 words</div>
+      <button class="icon lockbtn tap" id="lockBtn" aria-label="Locks"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path id="shackle" d="M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3"/></svg><span id="lockTxt"></span></button>
+      <button class="icon tap" id="critBtn" aria-label="Critiques"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5l4 4M4 20l1-5L15.5 4.5a2.1 2.1 0 0 1 3 0l1 1a2.1 2.1 0 0 1 0 3L9 19z"/></svg><span class="badge" id="critBadge" hidden></span></button>
+    </div>
+  </div>
+</section>
+
+<div class="scrim" id="scrim" hidden></div>
+
+<!-- sprint & locks sheet -->
+<div class="sheet" id="sprintSheet" role="dialog" aria-label="Sprint">
+  <div class="grab"></div>
+  <div class="sheet-head"><h2 id="sprintH">Sprint</h2></div>
+  <div class="sheet-body">
+    <div id="setup">
+      <div class="dialwrap">
+        <div class="dial" id="dial">
+          <svg viewBox="0 0 240 240" id="dialSvg"></svg>
+          <div class="center"><div><input id="dialNum" type="number" inputmode="numeric" min="1" max="600" value="25" aria-label="Minutes"><span class="unit">minutes</span></div></div>
+        </div>
+      </div>
+      <div class="chips" id="chips"></div>
+      <button class="btn gold tap" id="startBtn" style="width:100%;min-height:56px;font-size:17px">Start sprint</button>
+    </div>
+    <div id="live" hidden>
+      <div class="count" id="count">0:00</div><small id="countSub"></small>
+      <div class="prog"><i id="progFill"></i></div>
+      <div class="btnrow"><button class="btn tap wide" id="plus5">+5 min</button><button class="btn tap wide danger" id="endBtn">End sprint</button></div>
+    </div>
+
+    <div class="kick" id="locksKick">Edit lock</div>
+    <div class="group">
+      <div class="row"><div class="lbl">Edit lock<small>No deleting, cutting, undo or redo, so you keep writing forward.</small></div><button class="sw" role="switch" id="swEdit" aria-checked="false" aria-label="Edit lock"></button></div>
+      <div id="editOpts" hidden>
+        <div class="row" style="border-top:0;padding-top:0"><div class="seg" id="modeSeg"><i></i><button data-v="sprints">During sprints</button><button data-v="always">All the time</button></div></div>
+        <div class="row ptsrow"><div class="lbl">Edit points<small>Each character you write earns a point, up to this max. Edits spend one point per character they remove. 0 turns points off.</small></div><input class="num" id="ptsMax" type="number" inputmode="numeric" min="0" max="9999" aria-label="Most edit points"></div>
+        <div class="loopline" id="ptsLine" hidden><span class="pbar"><i id="ptsFill"></i></span><b id="ptsVal" class="g"></b></div>
+        <div class="row ptsrow"><div class="lbl">Movement points<small>Earned the same way, up to this max. Each arrow, Home, End or Page Up/Down press spends one. Tapping somewhere costs what it would take with the arrow keys: one per line, then one per character. 0 turns them off.</small></div><input class="num" id="mMax" type="number" inputmode="numeric" min="0" max="9999" aria-label="Most movement points"></div>
+        <div class="loopline" id="mLine" hidden><span class="pbar"><i id="mFill"></i></span><b id="mVal" class="g"></b></div>
+        <div class="row" id="mBackRow" hidden style="border-top:0;padding-top:0"><div class="lbl">Only moving back costs<small>Moving forward is always free: Right, Down, End, Page Down, or tapping further on.</small></div><button class="sw" role="switch" id="swMBack" aria-checked="false" aria-label="Only moving back costs"></button></div>
+      </div>
+    </div>
+    <div class="kick">After each sprint</div>
+    <div class="group">
+      <div class="flowline" id="flowLine" aria-hidden="true"></div>
+      <div class="stepsList" id="stepsList" role="list" aria-label="Steps after each sprint, in order"></div>
+      <div class="addrow"><button class="chip tap" data-add="edit">+ Edit</button><button class="chip tap" data-add="rest">+ Rest</button></div>
+      <p class="help"><b>Edit</b>: the edit lock lifts so you can delete and revise. <b>Rest</b>: writing is locked so you step away; critiques stay open. Tap a step's name to switch it.</p>
+      <div class="row" id="repeatRow"><div class="lbl">Repeat<small id="repeatHelp">When the last step is over, the next sprint starts by itself.</small></div><button class="sw" role="switch" id="swRepeat" aria-checked="false" aria-label="Repeat"></button></div>
+      <div class="row"><div class="lbl">Rest between sprints<small>Writing stays locked whenever a sprint isn't running. Starting a sprint unlocks it. Critiques stay open.</small></div><button class="sw" role="switch" id="swIdle" aria-checked="false" aria-label="Rest between sprints"></button></div>
+    </div>
+  </div>
+</div>
+
+<!-- critiques sheet -->
+<div class="sheet" id="critSheet" role="dialog" aria-label="Critiques">
+  <div class="grab"></div>
+  <div class="sheet-head"><h2>Critiques</h2></div>
+  <div class="sheet-body">
+    <div class="addbox" id="addbox">
+      <textarea id="critIn" rows="2" placeholder="What's missing or wrong?" enterkeyhint="done"></textarea>
+      <div class="r"><small id="critFor"></small><button class="btn gold tap" id="critAdd">Add</button></div>
+    </div>
+    <div class="seg" id="scopeSeg" style="margin-bottom:12px"><i></i><button data-v="sprint">This sprint</button><button data-v="doc">This page</button><button data-v="all">All</button></div>
+    <div id="critOpen"></div>
+    <button class="fold" id="fold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg><span id="foldTxt"></span></button>
+    <div id="critDone" hidden></div>
+  </div>
+</div>
+
+<!-- actions / settings sheet -->
+<div class="sheet" id="actSheet" role="dialog">
+  <div class="grab"></div>
+  <div class="sheet-head"><h2 id="actH"></h2></div>
+  <div class="sheet-body" id="actBody"></div>
+</div>
+
+<!-- text settings -->
+<div class="sheet" id="textSheet" role="dialog" aria-label="Text">
+  <div class="grab"></div>
+  <div class="sheet-head"><h2>Text</h2></div>
+  <div class="sheet-body">
+    <div class="kick" style="margin-top:4px">Typeface</div>
+    <div class="seg" id="fontSeg" style="margin-bottom:6px"><i></i><button data-v="serif" style="font-family:var(--read);font-size:15px">Serif</button><button data-v="sans">Sans</button><button data-v="mono" style="font-family:ui-monospace,Menlo,monospace;font-size:12.5px">Mono</button></div>
+    <div class="sizerow"><span style="font-size:14px">A</span><input type="range" class="range" id="sizeIn" min="14" max="28" step="1"><span style="font-size:24px">A</span></div>
+    <div class="kick">Line spacing</div>
+    <div class="seg" id="lhSeg" style="margin-bottom:6px"><i></i><button data-v="1">Single</button><button data-v="1.15">1.15</button><button data-v="1.5">1.5</button><button data-v="2">Double</button></div>
+    <div class="kick">Paragraphs</div>
+    <div class="seg" id="paraSeg" style="margin-bottom:6px"><i></i><button data-v="space">Space between</button><button data-v="indent">Indent first line</button></div>
+    <div class="kick">Flow</div>
+    <div class="group" id="flowGroup"></div>
+    <div class="kick">Layout</div>
+    <div class="seg" id="layoutSeg" style="margin-bottom:6px"><i></i><button data-v="scroll">One long page</button><button data-v="pages">Separate pages</button></div>
+    <div class="kick">Appearance</div>
+    <div class="seg" id="themeSeg"><i></i><button data-v="auto">Auto</button><button data-v="light">Light</button><button data-v="dark">Dark</button></div>
+    <p style="color:var(--muted);font-size:12.5px;line-height:1.5;padding:14px 6px 0">Typeface, spacing and paragraph style go into the exported .docx too (Serif as Times New Roman, Sans as Calibri, Mono as Courier New). Size, layout and appearance are only for reading here. Page breaks are approximate; Word lays out its own pages.</p>
+  </div>
+</div>
+
+<!-- find & replace -->
+<div class="sheet" id="findSheet" role="dialog" aria-label="Find">
+  <div class="grab"></div>
+  <div class="sheet-head"><h2>Find</h2><button class="btn soft tap" id="caseBtn" style="min-height:34px;padding:0 12px;font-size:13px;border-radius:11px">Aa</button></div>
+  <div class="sheet-body">
+    <div class="findrow"><input class="field" id="findIn" placeholder="Find" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search"><span class="findinfo" id="findInfo"></span><button class="sq tap" id="findPrev" aria-label="Previous"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg></button><button class="sq tap" id="findNext" aria-label="Next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button></div>
+    <div class="findrow"><input class="field" id="replIn" placeholder="Replace with" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done"></div>
+    <div class="btnrow"><button class="btn tap wide" id="replOne">Replace</button><button class="btn tap wide" id="replAll">Replace all</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="lib/jszip.min.js"></script>
+<script>
+"use strict";
+/* ======================= storage ======================= */
+const KEY="rill.v1", DOCKEY="rill.doc.";
+const DEF_SETTINGS={minutes:25,editLock:false,mode:"sprints",loopLock:10,loopFree:3,timeLock:false,timeLockMin:5,sound:true,haptics:true,theme:"auto",fs:19,lockTip:false,ptsMax:0,mMax:0,mBack:false,autoRestart:false,idleRest:false,pages:false,after:"stop",afterMin:5,repeat:false,fFade:true,fDim:true,fType:true,fQuiet:true,fAuto:true,fOver:true};
+function fresh(){return {docs:[],critiques:[],sprints:[],settings:{...DEF_SETTINGS},sprint:null,timeLockUntil:0,pts:0}}
+let S=(()=>{try{const d=JSON.parse(localStorage.getItem(KEY));if(d&&d.docs){d.settings={...DEF_SETTINGS,...d.settings};return {...fresh(),...d}}}catch(e){}return fresh()})();
+// one-time move from the old controls (Loop / Time lock / Then restart) to Edit lock + After each sprint
+(function migrate(){const st=S.settings;if(st.flow2)return;
+  if(st.editLock&&st.mode==="loop"){st.after="edit";st.afterMin=st.loopFree||3;st.repeat=true;st.minutes=st.loopLock||st.minutes}
+  else if(st.timeLock){st.after="rest";st.afterMin=st.timeLockMin||5;st.repeat=!!st.autoRestart}
+  else{st.after="stop";st.afterMin=st.timeLockMin||5;st.repeat=false}
+  if(st.mode!=="always")st.mode="sprints";
+  if(S.timeLockUntil>Date.now())S.brk={kind:"rest",until:S.timeLockUntil,docId:S.lockDoc||null};
+  delete S.timeLockUntil;delete S.lockDoc;st.flow2=true;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}})();
+// after-sprint steps: a list like [{k:"edit",m:5},{k:"rest",m:5}] that runs in order
+(function migrateSteps(){const st=S.settings;if(Array.isArray(st.steps))return;st.steps=(st.after==="rest"||st.after==="edit")?[{k:st.after,m:st.afterMin||5}]:[];try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}})();
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){toast("Couldn't save: storage is full")}}
+function getHtml(id){try{return localStorage.getItem(DOCKEY+id)||""}catch(e){return ""}}
+function setHtml(id,h){try{localStorage.setItem(DOCKEY+id,h);return true}catch(e){toast("Couldn't save: storage is full");return false}}
+const DESK=window.folioDesk||null;
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const now=()=>Date.now();
+function fmtT(ms){ms=Math.max(0,ms);const s=Math.ceil(ms/1000),h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return (h?h+":"+String(m).padStart(2,"0"):m)+":"+String(x).padStart(2,"0")}
+function when(t){const d=new Date(t),n=new Date();const same=d.toDateString()===n.toDateString();const tm=d.toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});if(same)return "Today, "+tm;const y=new Date(n);y.setDate(n.getDate()-1);if(d.toDateString()===y.toDateString())return "Yesterday, "+tm;return d.toLocaleDateString([], {month:"short",day:"numeric",year:d.getFullYear()===n.getFullYear()?undefined:"numeric"})+", "+tm}
+const countWords=t=>(t.match(/[\p{L}\p{N}][\p{L}\p{N}'’\-]*/gu)||[]).length;
+const htmlText=h=>{const d=document.createElement("div");d.innerHTML=h;d.querySelectorAll("p,div,h1,h2,h3,li,br").forEach(e=>e.after(" "));return d.textContent};
+
+/* ======================= feel: haptics + sound ======================= */
+// iOS Safari has no vibration API; toggling a native switch input gives a real haptic tick on iOS 18+.
+const hapEl=(()=>{const l=document.createElement("label"),i=document.createElement("input");i.type="checkbox";i.setAttribute("switch","");i.tabIndex=-1;l.appendChild(i);l.setAttribute("aria-hidden","true");l.style.cssText="position:fixed;left:-200px;top:0;opacity:0;pointer-events:none";document.body.appendChild(l);return l})();
+function hap(){if(!S.settings.haptics)return;if(document.activeElement===ed)return;try{hapEl.click()}catch(e){}try{navigator.vibrate&&navigator.vibrate(8)}catch(e){}}
+let AC=null;
+function ac(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){return null}}if(AC.state==="suspended")AC.resume();return AC}
+function tone(f,dur,vol,type,delay){if(!S.settings.sound)return;const a=ac();if(!a)return;const t=a.currentTime+(delay||0),o=a.createOscillator(),g=a.createGain();o.type=type||"sine";o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.006);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g);g.connect(a.destination);o.start(t);o.stop(t+dur+.05)}
+const tick=()=>tone(2400,.025,.035,"triangle");
+const thud=()=>tone(120,.12,.09,"sine");
+const bell=()=>{tone(784,2.6,.11);tone(1568,1.8,.05,"sine",.01);tone(2352,1,.025,"sine",.02)};
+const chime=()=>{tone(1047,.8,.07);tone(1568,.9,.055,"sine",.13)};
+document.addEventListener("pointerdown",()=>ac(),{once:true,capture:true});
+
+let toastT;
+function toast(msg,btn,fn){const t=$("#toast");t.innerHTML=esc(msg)+(btn?' <button>'+esc(btn)+'</button>':"");if(btn)t.querySelector("button").onclick=()=>{t.classList.remove("show");fn()};t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),btn?7000:2600)}
+
+/* ======================= sheets ======================= */
+let openSheet=null;
+function showSheet(el){if(openSheet&&openSheet!==el)hideSheet(true);const sc=$("#scrim");sc.hidden=false;requestAnimationFrame(()=>{sc.classList.add("show");el.classList.add("show")});openSheet=el;hap()}
+function hideSheet(quick){if(!openSheet)return;const el=openSheet;openSheet=null;if(el.id==="findSheet")clearFind();$("#scrim").classList.remove("clear");el.classList.remove("show");el.style.transform="";const sc=$("#scrim");sc.classList.remove("show");if(document.activeElement&&el.contains(document.activeElement))document.activeElement.blur();setTimeout(()=>{if(!openSheet)sc.hidden=true},quick?0:300)}
+$("#scrim").onclick=()=>hideSheet();
+// drag a sheet down by its grabber or header to dismiss it
+document.querySelectorAll(".sheet").forEach(sh=>{let y0=null,dy=0;
+  const down=e=>{y0=e.clientY;dy=0;sh.classList.add("drag");e.target.setPointerCapture&&e.target.setPointerCapture(e.pointerId)};
+  const move=e=>{if(y0==null)return;dy=Math.max(0,e.clientY-y0);sh.style.transform="translateY("+dy+"px)"};
+  const up=()=>{if(y0==null)return;y0=null;sh.classList.remove("drag");if(dy>90)hideSheet();else sh.style.transform=""};
+  sh.querySelectorAll(".grab,.sheet-head").forEach(h=>{h.addEventListener("pointerdown",down);h.addEventListener("pointermove",move);h.addEventListener("pointerup",up);h.addEventListener("pointercancel",up)})});
+
+function seg(el,val,onPick){const btns=[...el.querySelectorAll("button")];const ind=el.querySelector("i");
+  const paint=v=>{btns.forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===v));const b=btns.find(b=>b.dataset.v===v)||btns[0];ind.style.left=b.offsetLeft+"px";ind.style.width=b.offsetWidth+"px"};
+  btns.forEach(b=>b.onclick=()=>{if(b.getAttribute("aria-pressed")==="true")return;paint(b.dataset.v);tick();hap();onPick(b.dataset.v)});
+  el._paint=paint;paint(val)}
+function sw(el,on,onFlip){el.setAttribute("aria-checked",!!on);el.onclick=()=>{const v=el.getAttribute("aria-checked")!=="true";el.setAttribute("aria-checked",v);tick();hap();onFlip(v)}}
+
+/* ======================= shelf ======================= */
+let cur=null; // open doc object
+const ed=$("#ed");
+function renderShelf(){
+  const docs=[...S.docs].sort((a,b)=>b.updated-a.updated);
+  $("#empty").hidden=docs.length>0;
+  $("#cards").innerHTML=docs.map(d=>`<div class="card"><button class="open tap" data-id="${d.id}"><h3>${esc(d.title||"Untitled")}</h3><p>${esc(d.snippet||"")}</p><div class="meta">${(d.words||0).toLocaleString()} words · ${esc(when(d.updated))}</div></button><button class="more" data-more="${d.id}" aria-label="More"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="5.5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="18.5" cy="12" r="1.7"/></svg></button></div>`).join("");
+  const open=S.critiques.filter(c=>!c.resolved).length;const b=$("#shelfBadge");b.hidden=!open;b.textContent=open;
+  paintRunning();
+}
+function paintRunning(){const r=$("#running");if(!S.sprint){r.hidden=true;return}const d=S.docs.find(x=>x.id===S.sprint.docId);r.hidden=false;r.innerHTML=`<span class="pin"></span><span style="flex:1">Sprint on ${esc(d?d.title||"Untitled":"a page")}</span><b>${fmtT(S.sprint.endsAt-now())}</b>`}
+$("#running").onclick=()=>{if(S.sprint)openDoc(S.sprint.docId)};
+$("#cards").addEventListener("click",e=>{const o=e.target.closest("[data-id]");if(o){hap();openDoc(o.dataset.id);return}const m=e.target.closest("[data-more]");if(m)docActions(m.dataset.more)});
+$("#newBtn").onclick=()=>{hap();tick();const d=newDoc("Untitled","<p><br></p>");openDoc(d.id,true)};
+$("#openBtn").onclick=()=>{hap();$("#file").click()};
+$("#file").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;importDocx(await f.arrayBuffer(),f.name,DESK&&DESK.pathFor?DESK.pathFor(f):null)};
+async function importDocx(buf,fname,fpath){
+  if(!/\.docx$/i.test(fname)){toast("Rill opens .docx files only");return}
+  if(fpath){const had=S.docs.find(x=>x.filePath===fpath);if(had){openDoc(had.id);toast("Already on your shelf");return}}
+  try{toast("Opening…");await loadMammoth();const AL={center:"center",right:"right",end:"right",both:"justify",distribute:"justify"};
+    const r=await mammoth.convertToHtml({arrayBuffer:buf},{ignoreEmptyParagraphs:false,
+      styleMap:["p[style-name='RillAlign-center'] => p.al-center:fresh","p[style-name='RillAlign-right'] => p.al-right:fresh","p[style-name='RillAlign-justify'] => p.al-justify:fresh","u => u","strike => s","p[style-name='Quote'] => blockquote > p:fresh","p[style-name='RillH1-center'] => h1.al-center:fresh","p[style-name='RillH1-right'] => h1.al-right:fresh","p[style-name='RillH1-justify'] => h1.al-justify:fresh","p[style-name='RillH2-center'] => h2.al-center:fresh","p[style-name='RillH2-right'] => h2.al-right:fresh","p[style-name='RillH2-justify'] => h2.al-justify:fresh","p[style-name='RillH3-center'] => h3.al-center:fresh","p[style-name='RillH3-right'] => h3.al-right:fresh","p[style-name='RillH3-justify'] => h3.al-justify:fresh","p[style-name='Intense Quote'] => blockquote > p:fresh"],
+      transformDocument:mammoth.transforms.paragraph(el=>{const m=AL[el.alignment];if(!m||el.numbering)return el;const h=/^heading ([1-3])$/i.exec(el.styleName||"");if(h)return {...el,styleName:"RillH"+h[1]+"-"+m};if(/heading|title|quote/i.test(el.styleName||""))return el;return {...el,styleName:"RillAlign-"+m}})});
+    const html=clean(r.value)||"<p><br></p>";const d=newDoc(fname.replace(/\.docx$/i,""),html);d.fileName=fname;if(fpath)d.filePath=fpath;save();openDoc(d.id);
+    const lost=r.messages.some(m=>/image/i.test(m.message))||/<img/i.test(r.value);d.lossy=lost;save();toast(lost?"Opened. Images were left out.":"Opened "+fname)}
+  catch(err){console.error(err);toast("Couldn't read that file")}}
+function loadMammoth(){return window.mammoth?Promise.resolve():new Promise((ok,no)=>{const s=document.createElement("script");s.src="lib/mammoth.browser.min.js";s.onload=ok;s.onerror=no;document.head.appendChild(s)})}
+function newDoc(title,html){const d={id:uid(),title,created:now(),updated:now()};setHtml(d.id,html);meta(d,html);S.docs.push(d);save();return d}
+function meta(d,html){const t=htmlText(html).replace(/\s+/g," ").trim();d.words=countWords(t);d.snippet=t.slice(0,160)}
+
+function docActions(id){const d=S.docs.find(x=>x.id===id);if(!d)return;$("#actH").textContent=d.title||"Untitled";
+  $("#actBody").innerHTML=`<div class="acts"><button data-a="share"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3.5M7.5 8L12 3.5 16.5 8"/><path d="M8 11H6.5A2.5 2.5 0 0 0 4 13.5v4A2.5 2.5 0 0 0 6.5 20h11a2.5 2.5 0 0 0 2.5-2.5v-4a2.5 2.5 0 0 0-2.5-2.5H16"/></svg>Export .docx</button><button data-a="dup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8"/></svg>Duplicate</button><button data-a="del" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4.5 7h15M9.5 7V5h5v2M6.5 7l1 12.5h9l1-12.5"/></svg>Delete</button></div>`;
+  $("#actBody").onclick=e=>{const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a;
+    if(a==="share"){exportDoc(d)}
+    else if(a==="dup"){hideSheet();const c2=newDoc(d.title+" copy",getHtml(d.id));if(d.fmt){c2.fmt={...d.fmt};save()}renderShelf();toast("Duplicated")}
+    else if(a==="del"){if(b.dataset.sure){hideSheet();S.docs=S.docs.filter(x=>x!==d);try{localStorage.removeItem(DOCKEY+d.id)}catch(e){}if(S.sprint&&S.sprint.docId===d.id)S.sprint=null;save();renderShelf();thud();toast("Deleted")}else{b.dataset.sure=1;b.lastChild.textContent="Tap again to delete for good";hap()}}};
+  showSheet($("#actSheet"))}
+
+$("#shelfSettings").onclick=()=>{$("#actH").textContent="Settings";
+  $("#actBody").innerHTML=`<div class="group"><div class="row"><div class="lbl">Sounds<small>Bell at the end of a sprint, soft clicks on controls.</small></div><button class="sw" id="swSound"></button></div><div class="row"><div class="lbl">Haptics<small>Small taps on iPhone when you press things.</small></div><button class="sw" id="swHap"></button></div></div><div class="kick">Appearance</div><div class="seg" id="themeSeg2" style="margin-bottom:14px"><i></i><button data-v="auto">Auto</button><button data-v="light">Light</button><button data-v="dark">Dark</button></div><p style="color:var(--muted);font-size:13px;padding:0 6px;line-height:1.5">Your pages live on this iPhone, inside Rill. To keep a copy in Files or send one to Word, use Export .docx.</p>`;
+  $("#actBody").onclick=null;
+  sw($("#swSound"),S.settings.sound,v=>{S.settings.sound=v;save()});sw($("#swHap"),S.settings.haptics,v=>{S.settings.haptics=v;save()});
+  showSheet($("#actSheet"));requestAnimationFrame(()=>seg($("#themeSeg2"),S.settings.theme,setTheme))};
+
+/* ======================= editor ======================= */
+function openDoc(id,focus){const d=S.docs.find(x=>x.id===id);if(!d)return;cur=d;lastSel=null;S.lastDoc=id;save();
+  ed.innerHTML=getHtml(id)||"<p><br></p>";$("#title").value=d.title||"";
+  $("#shelf").hidden=true;$("#editor").hidden=false;$("#scroll").scrollTop=0;applyText();paintDirty();
+  refreshWords();paintAll();if(focus)setTimeout(()=>{ed.focus();placeCaretEnd()},60)}
+function placeCaretEnd(){const r=document.createRange();r.selectNodeContents(ed);r.collapse(false);const s=getSelection();s.removeAllRanges();s.addRange(r)}
+$("#back").onclick=()=>{flush();hap();ed.blur();clearSpacers();ed.querySelectorAll(".cur").forEach(x=>x.classList.remove("cur"));S.lastDoc=null;save();cur=null;$("#editor").hidden=true;$("#shelf").hidden=false;renderShelf()};
+$("#title").addEventListener("input",()=>{if(!cur)return;cur.title=$("#title").value.trim()||"Untitled";cur.updated=now();save()});
+$("#title").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$("#title").blur()}});
+try{document.execCommand("defaultParagraphSeparator",false,"p")}catch(e){}
+
+let saveT=null;
+function edHtml(){if(!ed.querySelector(".pgs,.cur"))return ed.innerHTML;const c=ed.cloneNode(true);c.querySelectorAll(".pgs").forEach(x=>x.remove());c.querySelectorAll(".cur").forEach(x=>{x.classList.remove("cur");if(!x.getAttribute("class"))x.removeAttribute("class")});c.normalize();return c.innerHTML}
+function flush(){if(!cur||saveT===null)return;clearTimeout(saveT);saveT=null;const h=edHtml();if(setHtml(cur.id,h)){meta(cur,h);cur.updated=now();save()}}
+ed.addEventListener("input",()=>{if(!ed.querySelector("p,div:not(.pgs),h1,h2,h3,ul,ol,blockquote"))ed.innerHTML="<p><br></p>",placeCaretEnd();schedulePaginate();clearTimeout(saveT);saveT=setTimeout(flush,500);refreshWords();keepCaretVisible()});
+window.addEventListener("pagehide",flush);document.addEventListener("visibilitychange",()=>{if(document.hidden)flush();else loop()});
+
+let liveWords=0;
+function refreshWords(){liveWords=countWords(ed.innerText||"");let s=liveWords.toLocaleString()+(liveWords===1?" word":" words");if(S.sprint&&cur&&S.sprint.docId===cur.id){const g=liveWords-S.sprint.wordsStart;s=`<b>${g>=0?"+":""}${g.toLocaleString()}</b> · `+s}$("#words").innerHTML=s}
+
+/* ======================= formatting ======================= */
+let savedRange=null;
+function saveSel(){const s=getSelection();if(s.rangeCount&&ed.contains(s.anchorNode))savedRange=s.getRangeAt(0).cloneRange()}
+function restoreSel(){ed.focus({preventScroll:true});if(savedRange&&ed.contains(savedRange.startContainer)){const s=getSelection();s.removeAllRanges();s.addRange(savedRange)}}
+ed.addEventListener("focus",()=>{$("#fmt").hidden=false;paintFmt()});
+ed.addEventListener("blur",()=>{saveSel();setTimeout(()=>{if(document.activeElement!==ed){$("#fmt").hidden=true;showPanel("main")}},150)});
+document.addEventListener("selectionchange",()=>{if(document.activeElement===ed){saveSel();paintFmt()}});
+const BLOCKS="P,DIV,H1,H2,H3,LI,BLOCKQUOTE".split(",");
+function blockOf(n){while(n&&n!==ed){if(n.nodeType===1&&BLOCKS.includes(n.tagName))return n;n=n.parentNode}return null}
+function blocksInSel(){const s=getSelection();if(!s.rangeCount)return[];const r=s.getRangeAt(0);
+  const out=[...ed.querySelectorAll("p,div,h1,h2,h3,li,blockquote")].filter(b=>!b.querySelector("p,div,h1,h2,h3,li,blockquote")&&r.intersectsNode(b));
+  if(!out.length){const b=blockOf(s.anchorNode);if(b)out.push(b)}return out}
+function alignOf(b){for(let e=b;e&&e!==ed;e=e.parentNode){const a=(e.style&&e.style.textAlign)||(e.getAttribute&&e.getAttribute("align"));if(a)return a==="start"?"left":a==="end"?"right":a}return "left"}
+function styleOf(b){if(!b)return "p";if(b.closest("blockquote"))return "blockquote";return /^H[1-3]$/.test(b.tagName)?b.tagName.toLowerCase():"p"}
+const STYLE_NAMES={p:"Body",h1:"Heading 1",h2:"Heading 2",h3:"Heading 3",blockquote:"Quote"};
+function showPanel(n){document.querySelectorAll("#fmt .fpanel").forEach(p=>p.hidden=p.dataset.panel!==n);paintFmt()}
+function paintFmt(){const q=c=>{try{return document.queryCommandState(c)}catch(e){return false}};const s=getSelection();const b=s.rangeCount?blockOf(s.anchorNode):null;
+  const st=styleOf(b),al=alignOf(b),ul=!!b&&!!b.closest("ul"),ol=!!b&&!!b.closest("ol");
+  const on={bold:q("bold"),italic:q("italic"),underline:q("underline"),strikeThrough:q("strikeThrough"),insertUnorderedList:ul,insertOrderedList:ol};
+  document.querySelectorAll("#fmt [data-cmd]").forEach(x=>x.classList.toggle("on",!!on[x.dataset.cmd]));
+  document.querySelectorAll("#fmt [data-block]").forEach(x=>x.classList.toggle("on",x.dataset.block===st));
+  document.querySelectorAll("#fmt [data-align]").forEach(x=>x.classList.toggle("on",x.dataset.align===al));
+  $("#styleLbl").textContent=STYLE_NAMES[st];
+  const ab=$("#alignBtn"),src=document.querySelector(`#fmt [data-align="${al}"]`);if(src&&ab.dataset.al!==al){ab.innerHTML=src.innerHTML;ab.dataset.al=al}ab.classList.toggle("on",al!=="left");
+  const lb=$("#listBtn"),want=ol?"insertOrderedList":"insertUnorderedList";if(lb.dataset.k!==want){lb.innerHTML=document.querySelector(`#fmt [data-cmd="${want}"]`).innerHTML;lb.dataset.k=want}lb.classList.toggle("on",ul||ol)}
+function applyAlign(blocks,a){blocks.forEach(x=>{if(!x)return;x.removeAttribute("align");x.style.textAlign=a==="left"?"":a;if(!x.getAttribute("style"))x.removeAttribute("style")})}
+function unwrapQuote(bq){const kids=[...bq.childNodes];const hasBlock=kids.some(k=>k.nodeType===1&&BLOCKS.includes(k.tagName));let first;
+  if(hasBlock){kids.forEach(k=>bq.before(k));first=kids.find(k=>k.nodeType===1)}else{const p=document.createElement("p");kids.forEach(k=>p.appendChild(k));if(!p.firstChild)p.innerHTML="<br>";bq.before(p);first=p}
+  bq.remove();if(first){const r=document.createRange();r.selectNodeContents(first);r.collapse(false);const s=getSelection();s.removeAllRanges();s.addRange(r)}}
+$("#fmt").addEventListener("pointerdown",e=>{if(e.target.closest("button"))e.preventDefault()}); // keep the keyboard up
+$("#fmt").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;tick();quietSel(400);
+  if(b.dataset.p){showPanel(b.dataset.p);return}
+  const c=b.dataset.cmd;
+  if(c==="done"){ed.blur();return}
+  if(c==="find")return openFind();if(c==="page")return openText();if(c==="stats")return openStats();
+  if(timeLocked())return nope();
+  if(document.activeElement!==ed)restoreSel();
+  if(c==="undo"||c==="redo"){if(editBlocking()&&!spend())return nope();document.execCommand(c)}
+  else if(c==="scene"){const blk=blockOf(getSelection().anchorNode);if(blk&&blk.textContent.trim())document.execCommand("insertParagraph");document.execCommand("insertText",false,"*   *   *");applyAlign([blockOf(getSelection().anchorNode)],"center");document.execCommand("insertParagraph");applyAlign([blockOf(getSelection().anchorNode)],"left");showPanel("main")}
+  else if(b.dataset.block){const v=b.dataset.block,blk=blockOf(getSelection().anchorNode),bq=blk&&blk.closest("blockquote");
+    if(bq)unwrapQuote(bq);
+    if(!(bq&&v==="blockquote"))document.execCommand("formatBlock",false,v);
+    showPanel("main")}
+  else if(b.dataset.align)applyAlign(blocksInSel(),b.dataset.align);
+  else if(c==="indent"||c==="outdent"){const bl=blocksInSel();
+    if(bl.some(x=>x.closest("li")))document.execCommand(c);
+    else bl.forEach(x=>{const n=Math.max(0,Math.min(8,(+x.dataset.ind||0)+(c==="indent"?1:-1)));if(n){x.dataset.ind=n;x.style.marginLeft=(n*1.6)+"em"}else{delete x.dataset.ind;x.style.marginLeft="";if(!x.getAttribute("style"))x.removeAttribute("style")}})}
+  else document.execCommand(c);
+  paintFmt();ed.dispatchEvent(new Event("input"))});
+
+/* ======================= text settings & theme ======================= */
+const LH_SHOW={"1":1.3,"1.15":1.5,"1.5":1.85,"2":2.3};
+const docFmt=()=>({font:"serif",lh:"1.15",para:"space",...(cur&&cur.fmt||{})});
+function applyText(){const f=docFmt();ed.className="ed "+f.font+(f.para==="indent"?" indent":"");ed.style.setProperty("--fs",S.settings.fs+"px");ed.style.setProperty("--lh",LH_SHOW[f.lh]||1.5);paginate()}
+
+/* ======================= page view ======================= */
+// Letter paper (8.5 x 11 in, 1 in margins), scaled to the screen. Blocks that would cross a page edge are pushed to the next
+// page; long paragraphs are split at a line. The spacers doing this are marked .pgs and stripped before saving or exporting.
+let pgRaf=0;
+function schedulePaginate(){if(!S.settings.pages)return;cancelAnimationFrame(pgRaf);pgRaf=requestAnimationFrame(paginate)}
+function clearSpacers(){const sp=ed.querySelectorAll(".pgs");if(!sp.length)return;sp.forEach(x=>x.remove());ed.normalize()}
+function paginate(){
+  quietSel(300);  const pg=$("#page"),on=!!S.settings.pages&&!$("#editor").hidden;pg.classList.toggle("paged",!!S.settings.pages);
+  clearSpacers();if(!on){$("#sheets").innerHTML="";return}
+  const avail=$("#scroll").clientWidth-24,PW=Math.min(760,avail),PH=Math.round(PW*11/8.5),M=Math.round(PW/8.5),G=Math.max(14,Math.round(PW*.03)),P=PH+G,CH=PH-2*M;
+  pg.style.setProperty("--pw",PW+"px");pg.style.setProperty("--ph",PH+"px");pg.style.setProperty("--m",M+"px");
+  const y=el=>el.getBoundingClientRect(),base=()=>y(ed).top+M; // page 0 content starts here
+  const spacer=h=>{const d=document.createElement("span");d.className="pgs";d.contentEditable="false";d.style.height=Math.max(0,h).toFixed(2)+"px";return d};
+  const blocks=[...ed.children].filter(b=>!b.classList.contains("pgs"));
+  for(const b of blocks){
+    let q=null; // the page whose bottom edge we're checking this block against
+    for(let guard=0;guard<300;guard++){
+      const B=base(),r=y(b),top=r.top-B,bottom=r.bottom-B,p=Math.max(0,Math.floor((top+1.5)/P));
+      if(q===null){if(top-p*P>CH+.5){b.before(spacer((p+1)*P-top));continue}q=p}  // starts in a gap: move to next page
+      const end=q*P+CH;
+      if(bottom<=end+.5)break;                                                     // fits
+      const lh=parseFloat(getComputedStyle(b).lineHeight)||24;
+      if(q===p&&top>p*P+1&&(/^H[1-3]$/.test(b.tagName)||r.height<=lh*3.2)){b.before(spacer((p+1)*P-top));q=null;continue} // short block or heading: move it whole
+      const res=splitAt(b,end+B,(q+1)*P+B);
+      if(res==="first"&&q===p){b.before(spacer((p+1)*P-top));q=null;continue}   // its first line is the one crossing: move it whole
+      q++;                                              // long paragraph: break it at the line that crosses
+    }
+  }
+  const last=blocks.length?y(blocks[blocks.length-1]).bottom-base():0,n=Math.max(1,Math.floor(Math.max(0,last-1)/P)+1);
+  let h="";for(let i=0;i<n;i++)h+=`<div class="pg-sheet" style="top:${i*P}px" data-n="${n>1?i+1:""}"></div>`;$("#sheets").innerHTML=h;
+  ed.style.minHeight=(n*P-G)+"px"}
+// find the first line in block b whose bottom passes `limit` (viewport y) and push it to `nextTop` with an inline spacer
+function splitAt(b,limit,nextTop){
+  const w=document.createTreeWalker(b,NodeFilter.SHOW_TEXT,{acceptNode:n=>n.parentNode.closest(".pgs")?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT});
+  const nodes=[];let n;while((n=w.nextNode()))if(n.nodeValue.length)nodes.push(n);if(!nodes.length)return false;
+  const idx=[];let total=0;for(const t of nodes){idx.push(total);total+=t.nodeValue.length}
+  const at=k=>{let i=nodes.length-1;while(i>0&&idx[i]>k)i--;return [nodes[i],k-idx[i]]};
+  const rect=k=>{const [t,o]=at(k),rg=document.createRange();rg.setStart(t,o);rg.setEnd(t,Math.min(t.nodeValue.length,o+1));const rs=rg.getClientRects();return rs[rs.length-1]||rg.getBoundingClientRect()};
+  let lo=0,hi=total-1;if(rect(hi).bottom<=limit+.5)return false;
+  while(lo<hi){const mid=(lo+hi)>>1;if(rect(mid).bottom>limit+.5)hi=mid;else lo=mid+1}
+  const lineTop=rect(lo).top;let s0=0,s1=lo;while(s0<s1){const mid=(s0+s1)>>1;if(rect(mid).top>=lineTop-1)s1=mid;else s0=mid+1}
+  if(s0===0)return "first";
+  const [t,o]=at(s0);const tail=o>0?t.splitText(o):t;tail.before(spacer(nextTop-lineTop));return true;
+  function spacer(h){const d=document.createElement("span");d.className="pgs";d.contentEditable="false";d.style.height=Math.max(0,h).toFixed(2)+"px";return d}}
+window.addEventListener("resize",()=>schedulePaginate());
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>schedulePaginate());
+function setDocFmt(k,v){if(!cur)return;cur.fmt={...docFmt(),[k]:v};cur.updated=now();save();applyText()}
+function setTheme(v){S.settings.theme=v;save();applyTheme()}
+function applyTheme(){const t=S.settings.theme,root=document.documentElement;if(t==="auto")delete root.dataset.theme;else root.dataset.theme=t;
+  const dark=t==="dark"||(t==="auto"&&matchMedia("(prefers-color-scheme: dark)").matches);
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m=>m.setAttribute("content",dark?"#161513":"#e6dfd3"));
+  if(DESK)try{DESK.theme(dark)}catch(e){}}
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",applyTheme);
+function openText(){saveSel();showSheet($("#textSheet"));paintFlowOpts();const f=docFmt();
+  requestAnimationFrame(()=>{seg($("#fontSeg"),f.font,v=>setDocFmt("font",v));seg($("#lhSeg"),f.lh,v=>setDocFmt("lh",v));seg($("#paraSeg"),f.para,v=>setDocFmt("para",v));seg($("#themeSeg"),S.settings.theme,setTheme);seg($("#layoutSeg"),S.settings.pages?"pages":"scroll",v=>{S.settings.pages=v==="pages";save();paginate()})});
+  $("#sizeIn").value=S.settings.fs}
+$("#sizeIn").addEventListener("input",e=>{const v=+e.target.value;if(v!==S.settings.fs){S.settings.fs=v;tick();applyText()}});
+$("#sizeIn").addEventListener("change",()=>{save();hap();paginate()});
+
+/* ======================= flow ======================= */
+// While you're typing: the controls fade, the page edge dissolves, other paragraphs dim, and the line you're on holds still.
+// Move the mouse, tap, or pause for a few seconds and everything comes back.
+let lastTypeAt=0,revealUntil=0,momentum=0,flowOn=null,swallow=false,mx=0,my=0;
+const typingNow=()=>now()-lastTypeAt<3500&&document.activeElement===ed&&!openSheet;
+function markCur(){const s=getSelection();if(!s.rangeCount||!ed.contains(s.anchorNode))return;let n=s.anchorNode;while(n&&n.parentNode!==ed)n=n.parentNode;
+  if(!n||n.nodeType!==1||n.classList.contains("cur"))return;ed.querySelectorAll(".cur").forEach(x=>x.classList.remove("cur"));n.classList.add("cur")}
+function flowTick(){const st=S.settings,B=document.body,typing=typingNow(),inEd=!$("#editor").hidden;
+  const run=!!S.sprint&&!!cur&&S.sprint.docId===cur.id&&inEd;
+  B.classList.toggle("flowing",typing);B.classList.toggle("fdim",!!st.fDim);B.classList.toggle("fquiet",!!st.fQuiet);
+  B.classList.toggle("hush",typing&&!!st.fFade&&now()>revealUntil);B.classList.toggle("sprinting",run);
+  if(typing!==flowOn){flowOn=typing;if(typing)markCur();
+    if(DESK&&DESK.overlay){const cs=getComputedStyle(document.documentElement),g=k=>cs.getPropertyValue(k).trim();try{DESK.overlay(g(typing?"--paper":"--ground"),g("--ink"))}catch(e){}}}
+  momentum*=.93;
+  if(run){const sp=S.sprint,tot=sp.endsAt-sp.startedAt,f=$("#rillFill");f.style.width=Math.min(100,(now()-sp.startedAt)/tot*100)+"%";f.style.setProperty("--mo",Math.min(1,momentum/14).toFixed(2));$("#rill").classList.toggle("over",now()>sp.endsAt)}}
+setInterval(flowTick,250);
+ed.addEventListener("input",e=>{const t=e.inputType||"";if(!/^(insert|delete)/.test(t))return;lastTypeAt=now();if(t.startsWith("insert"))momentum+=Math.max(1,(e.data||"").length);markCur();
+  if(S.settings.fAuto&&t.startsWith("insert")&&cur&&!S.sprint&&!S.brk&&!timeLocked())startSprint(true); // just start writing: the sprint starts itself
+  flowTick()},true);
+document.addEventListener("selectionchange",()=>{if(document.body.classList.contains("flowing"))markCur()});
+document.addEventListener("pointermove",e=>{if(e.pointerType!=="mouse")return;if(Math.abs(e.clientX-mx)+Math.abs(e.clientY-my)<10)return;mx=e.clientX;my=e.clientY;revealUntil=now()+2500;document.body.classList.remove("hush")},true);
+document.addEventListener("pointerdown",e=>{if(!document.body.classList.contains("hush"))return;revealUntil=now()+3000;document.body.classList.remove("hush");
+  if(e.target.closest(".top,.dock")){e.preventDefault();e.stopPropagation();swallow=true;setTimeout(()=>{swallow=false},600)}},true); // a tap on faded controls only brings them back
+document.addEventListener("click",e=>{if(swallow){swallow=false;e.preventDefault();e.stopPropagation()}},true);
+const FLOW_OPTS=[["fFade","Fade the controls","The bars fade while you type. Move the mouse, tap or pause to bring them back."],["fDim","Dim other paragraphs","Only the paragraph you're writing stays bright."],["fType","Typewriter scrolling","The line you're on holds still and the page moves under it."],["fQuiet","Hide the clock and counts","During a sprint, no countdown or word count. A thin line across the top shows the time instead."],["fAuto","Start when I start typing","Your first keystroke starts the sprint. No setup."],["fOver","Don't cut me off","If you're mid-thought when time runs out, the sprint waits until you pause for 5 seconds (10 minutes at most)."]];
+function paintFlowOpts(){$("#flowGroup").innerHTML=FLOW_OPTS.map(([k,l,h])=>`<div class="row"><div class="lbl">${l}<small>${h}</small></div><button class="sw" role="switch" data-f="${k}" aria-label="${l}"></button></div>`).join("");
+  $("#flowGroup").querySelectorAll("[data-f]").forEach(b=>sw(b,S.settings[b.dataset.f],v=>{S.settings[b.dataset.f]=v;save();flowTick()}))}
+
+/* ======================= stats ======================= */
+function openStats(){flush();const t=ed.innerText||"";const w=countWords(t);const paras=[...ed.querySelectorAll("p,div,h1,h2,h3,li")].filter(b=>!b.querySelector("p,div,h1,h2,h3,li")&&b.textContent.trim()).length;
+  const sp=cur?S.sprints.filter(x=>x.docId===cur.id):[];const spw=sp.reduce((a,x)=>a+Math.max(0,x.words),0);
+  const st=(n,l)=>`<div class="stat"><b>${n}</b><small>${l}</small></div>`;
+  $("#actH").textContent="Count";$("#actBody").onclick=null;
+  $("#actBody").innerHTML=`<div class="stats">${st(w.toLocaleString(),"words")}${st(t.replace(/\n/g,"").length.toLocaleString(),"characters")}${st(t.replace(/\s/g,"").length.toLocaleString(),"without spaces")}${st(paras.toLocaleString(),"paragraphs")}${st(Math.max(1,Math.round(w/230))+" min","reading time")}${st(sp.length,"sprints here")}</div><p style="color:var(--muted);font-size:13px;padding:14px 6px 0">${spw.toLocaleString()} words written during sprints on this page.</p>`;
+  showSheet($("#actSheet"))}
+$("#words").onclick=()=>{if(cur){tick();openStats()}};
+
+/* ======================= find & replace ======================= */
+let hits=[],hitI=0,findCase=false;
+function openFind(){saveSel();const sel=savedRange&&!savedRange.collapsed?savedRange.toString():"";$("#scrim").classList.add("clear");showSheet($("#findSheet"));
+  const fi=$("#findIn");if(sel&&sel.length<80)fi.value=sel;fi.focus();fi.select();runFind(true)}
+function findAll(q){const res=[];if(!q)return res;const w=document.createTreeWalker(ed,NodeFilter.SHOW_TEXT);const nq=findCase?q:q.toLowerCase();let n;
+  while((n=w.nextNode())){const t=findCase?n.nodeValue:n.nodeValue.toLowerCase();let i=0;while((i=t.indexOf(nq,i))>=0){const r=document.createRange();r.setStart(n,i);r.setEnd(n,i+q.length);res.push(r);i+=q.length}}return res}
+function runFind(keep){const q=$("#findIn").value;hits=findAll(q);if(!keep||hitI>=hits.length)hitI=0;
+  if(!keep&&hits.length&&savedRange){const k=hits.findIndex(h=>h.compareBoundaryPoints(Range.START_TO_START,savedRange)>=0);if(k>=0)hitI=k}
+  paintHits()}
+function paintHits(){const info=$("#findInfo");info.textContent=!$("#findIn").value?"":hits.length?`${hitI+1} of ${hits.length}`:"None";
+  if(window.CSS&&CSS.highlights){CSS.highlights.set("folio-find",new Highlight(...hits));const c=hits[hitI];if(c)CSS.highlights.set("folio-cur",new Highlight(c));else CSS.highlights.delete("folio-cur")}
+  const c=hits[hitI];if(c){const rc=c.getBoundingClientRect(),sc=$("#scroll"),top=sc.getBoundingClientRect().top;const sheetTop=$("#findSheet").getBoundingClientRect().top;
+    if(rc.top<top+20||rc.bottom>sheetTop-20)sc.scrollBy({top:rc.top-top-90,behavior:"smooth"})}}
+function clearFind(){hits=[];if(window.CSS&&CSS.highlights){CSS.highlights.delete("folio-find");CSS.highlights.delete("folio-cur")}}
+$("#findIn").addEventListener("input",()=>runFind(false));
+$("#findIn").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();step(1)}});
+$("#replIn").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$("#replIn").blur()}});
+function step(d){if(!hits.length)return;hitI=(hitI+d+hits.length)%hits.length;tick();paintHits()}
+$("#findNext").onclick=()=>step(1);$("#findPrev").onclick=()=>step(-1);
+$("#caseBtn").onclick=()=>{findCase=!findCase;$("#caseBtn").classList.toggle("gold",findCase);tick();runFind(true)};
+function canReplace(n){if(timeLocked()){nope();toast("Time lock is on");return false}if(!editBlocking())return true;
+  if(ptsOn()){if(S.pts>=n){spend(n);return true}nope();toast(`That needs ${n} edit point${n>1?"s":""}. You have ${S.pts}.`);return false}
+  nope();toast("Edit lock is on, so replacing is off");return false}
+function replaceRange(r,t){quietSel(400);r.deleteContents();if(t)r.insertNode(document.createTextNode(t))}
+$("#replOne").onclick=()=>{if(!hits.length||!canReplace(chars(hits[hitI].toString())))return;replaceRange(hits[hitI],$("#replIn").value);ed.normalize();ed.dispatchEvent(new Event("input"));hap();tick();runFind(true)};
+$("#replAll").onclick=()=>{if(!hits.length||!canReplace(hits.reduce((a,h)=>a+chars(h.toString()),0)))return;const n=hits.length,t=$("#replIn").value;for(let i=hits.length-1;i>=0;i--)replaceRange(hits[i],t);ed.normalize();ed.dispatchEvent(new Event("input"));hap();chime();toast(`Replaced ${n}`);runFind(false)};
+
+/* keep the caret above the dock + keyboard */
+let glideRaf=0;
+function glide(sc,goal){cancelAnimationFrame(glideRaf);goal=Math.max(0,Math.min(sc.scrollHeight-sc.clientHeight,goal));const from=sc.scrollTop,t0=performance.now(),D=260;
+  const step=t=>{const k=Math.min(1,(t-t0)/D),e=1-Math.pow(1-k,3);sc.scrollTop=from+(goal-from)*e;if(k<1)glideRaf=requestAnimationFrame(step)};glideRaf=requestAnimationFrame(step)}
+function keepCaretVisible(){const s=getSelection();if(!s.rangeCount)return;const r=s.getRangeAt(0).cloneRange();let rect=r.getClientRects()[0];if(!rect){const b=blockOf(s.anchorNode);rect=b&&b.getBoundingClientRect()}if(!rect)return;
+  const dockTop=$("#dock").getBoundingClientRect().top;
+  if(S.settings.fType&&typingNow()){const sc=$("#scroll"),top=sc.getBoundingClientRect().top,d=rect.top-(top+(dockTop-top)*.4);if(Math.abs(d)>6)glide(sc,sc.scrollTop+d);return} // the line you're writing stays put; the page moves
+  const over=rect.bottom-(dockTop-24);if(over>0)$("#scroll").scrollBy({top:over,behavior:"smooth"})}
+
+/* keyboard tracking: the dock rides on top of the iOS keyboard */
+function kb(){const vv=window.visualViewport;if(!vv)return;const k=Math.max(0,window.innerHeight-vv.height-vv.offsetTop);document.documentElement.style.setProperty("--kb",k+"px");document.documentElement.style.setProperty("--safe-b",k>0?"0px":"env(safe-area-inset-bottom,0px)")}
+if(window.visualViewport){visualViewport.addEventListener("resize",()=>{kb();setTimeout(keepCaretVisible,60)});visualViewport.addEventListener("scroll",kb)}
+window.addEventListener("scroll",()=>{if(window.scrollY)window.scrollTo(0,0)});
+
+/* paste as plain text */
+ed.addEventListener("paste",e=>{e.preventDefault();if(timeLocked())return nope();const t=(e.clipboardData||window.clipboardData).getData("text/plain");if(!t)return;const s=getSelection();if(editBlocking()&&!s.isCollapsed){const c=selCost();if(!spend(c)){short(c);s.collapseToEnd()}}document.execCommand("insertText",false,t)});
+ed.addEventListener("drop",e=>{if(editBlocking()||timeLocked()){e.preventDefault();nope()}});
+
+/* ======================= edit points ======================= */
+// While the edit lock is blocking: each character written earns a point (up to the max); each edit spends one.
+const ptsOn=()=>S.settings.ptsMax>0;
+function earn(n){if(n<=0)return;let ch=false;
+  if(ptsOn()){const b=S.pts;S.pts=Math.min(S.settings.ptsMax,S.pts+n);ch=ch||S.pts!==b}
+  if(mOn()){const b=S.mpts||0;S.mpts=Math.min(S.settings.mMax,b+n);ch=ch||S.mpts!==b}
+  if(ch){save();paintPts()}}
+
+/* ======================= movement points ======================= */
+// Same earning as edit points; while the edit lock is blocking, each cursor move spends one.
+// Keys: arrows, Home, End, Page Up/Down. Pointer: a tap or click that lands the cursor somewhere new (one per tap or drag).
+const mOn=()=>S.settings.mMax>0;
+const moveActive=()=>mOn()&&editBlocking();
+function spendM(n){n=n||1;if((S.mpts||0)<n)return false;S.mpts-=n;save();if(S.mpts===0)toast("Out of movement points. Keep writing to earn more.");paintPts();return true}
+let lastSel=null,selQuietUntil=0,ptrDown=false,ptrPending=false;
+const quietSel=ms=>{selQuietUntil=now()+(ms||180)};
+const selNow=()=>{const s=getSelection();return s.rangeCount&&ed.contains(s.anchorNode)?s.getRangeAt(0).cloneRange():null};
+const sameSel=(a,b)=>!!a&&!!b&&a.startContainer===b.startContainer&&a.startOffset===b.startOffset&&a.endContainer===b.endContainer&&a.endOffset===b.endOffset;
+let mNoped=0;
+// A click or tap costs what the same move would cost with arrow keys: Up/Down once per line (keeping the column),
+// then Left/Right once per character. Dragging a selection also pays for the stretch from where it starts to where it ends.
+function caretRect(node,off){const r=document.createRange();try{r.setStart(node,off);r.collapse(true)}catch(e){return null}
+  const rc=r.getClientRects()[0];if(rc)return rc;const el=node.nodeType===1?(node.childNodes[off]||node):node.parentNode;return el&&el.getBoundingClientRect?el.getBoundingClientRect():null}
+function textIdx(node,off){const r=document.createRange();r.setStart(ed,0);try{r.setEnd(node,off)}catch(e){return 0}return r.toString().length}
+function arrowDist(a,b,cap){
+  const tb=caretRect(b.node,b.off);if(!tb)return 1;const s=getSelection(),r=document.createRange();
+  r.setStart(a.node,a.off);r.collapse(true);s.removeAllRanges();s.addRange(r);
+  const top=()=>{const q=s.getRangeAt(0),rc=caretRect(q.startContainer,q.startOffset);return rc?rc.top:0};
+  let steps=0,cur=top();const dir=tb.top>cur+3?"forward":tb.top<cur-3?"backward":null;
+  if(dir&&s.modify)for(let i=0;i<20000&&steps<=cap;i++){const before=cur;s.modify("move",dir,"line");steps++;cur=top();
+    if(Math.abs(cur-tb.top)<=3||cur===before||(dir==="forward"?cur>tb.top+3:cur<tb.top-3))break}
+  const q=s.getRangeAt(0);return steps+Math.abs(textIdx(q.startContainer,q.startOffset)-textIdx(b.node,b.off))}
+function checkMove(){const s=getSelection(),c=selNow();if(!c||!lastSel||!lastSel.startContainer.isConnected||sameSel(c,lastSel)){if(c)lastSel=c;return}
+  const A={node:s.anchorNode,off:s.anchorOffset},F={node:s.focusNode,off:s.focusOffset},from={node:lastSel.endContainer,off:lastSel.endOffset};
+  if(S.settings.mBack){const o=document.createRange();o.setStart(from.node,from.off);let back=false;try{back=o.comparePoint(A.node,A.off)<0||o.comparePoint(F.node,F.off)<0}catch(e){back=true}
+    if(!back){lastSel=c;return}} // only back: a tap further on is free
+  const have=S.mpts||0;
+  let cost=arrowDist(from,A,have+1);if(cost<=have&&!c.collapsed)cost+=arrowDist(A,F,have-cost+1);cost=Math.max(1,cost);
+  const nr=document.createRange();nr.setStart(A.node,A.off);nr.collapse(true);s.removeAllRanges();s.addRange(nr);if(!c.collapsed)s.extend(F.node,F.off); // put the new spot back
+  if(spendM(cost)){lastSel=selNow();return}
+  s.removeAllRanges();s.addRange(lastSel);nope();
+  if(now()-mNoped>2500){mNoped=now();toast(have?`That move needs ${cost>have?"more than "+have:cost} movement points. You have ${have}.`:"No movement points. Keep writing to earn more.")}}
+document.addEventListener("selectionchange",()=>{const c=selNow();if(!c)return;
+  if(!moveActive()||now()<selQuietUntil||!lastSel){lastSel=c;return}
+  if(ptrDown){ptrPending=true;return}
+  checkMove()});
+ed.addEventListener("pointerdown",()=>{ptrDown=true;ptrPending=false;selQuietUntil=0},true); // a new tap is never covered by an earlier free window
+["pointerup","pointercancel"].forEach(ev=>document.addEventListener(ev,()=>{if(!ptrDown)return;ptrDown=false;if(ptrPending){ptrPending=false;setTimeout(checkMove,0)}},true));
+ed.addEventListener("beforeinput",()=>quietSel(),true);ed.addEventListener("input",()=>{quietSel();lastSel=selNow()||lastSel},true);
+const MOVE_KEYS=["ArrowLeft","ArrowRight","ArrowUp","ArrowDown","Home","End","PageUp","PageDown"],FWD_KEYS=["ArrowRight","ArrowDown","End","PageDown"];
+ed.addEventListener("keydown",e=>{if(!MOVE_KEYS.includes(e.key)||!moveActive())return;
+  if(S.settings.mBack&&FWD_KEYS.includes(e.key)){quietSel(150);return} // only back: forward is free
+  if(spendM()){quietSel(150);return}
+  e.preventDefault();nope();if(now()-mNoped>4000){mNoped=now();toast("No movement points. Keep writing to earn more.")}},true);
+// cost of an edit = characters it removes (at least 1). Erasing a selected "mean" costs 4.
+const chars=t=>[...String(t||"")].length;
+function rangesText(rs){let n=0;for(const sr of rs||[]){try{const r=document.createRange();r.setStart(sr.startContainer,sr.startOffset);r.setEnd(sr.endContainer,sr.endOffset);n+=chars(r.toString())}catch(x){}}return n}
+function selCost(){const s=getSelection();return s.rangeCount&&!s.isCollapsed?Math.max(1,chars(s.toString())):1}
+function short(n){if(ptsOn()&&S.pts>0&&n>S.pts)toast(`That edit needs ${n} points. You have ${S.pts}.`)}
+function spend(n){n=n||1;if(!ptsOn()||S.pts<n)return false;S.pts-=n;save();tone(1500,.05,.04,"triangle");if(S.pts===0)toast("Out of edit points. Keep writing to earn more.");paintPts();return true}
+function paintPts(){const on=ptsOn(),m=S.settings.ptsMax;
+  if($("#ptsLine")){$("#ptsLine").hidden=!on;if(on){$("#ptsFill").style.width=Math.round(S.pts/m*100)+"%";$("#ptsVal").textContent=S.pts+" / "+m}}
+  const mo=mOn(),mm=S.settings.mMax;if($("#mBackRow"))$("#mBackRow").hidden=!mo;if($("#mLine")){$("#mLine").hidden=!mo;if(mo){$("#mFill").style.width=Math.round((S.mpts||0)/mm*100)+"%";$("#mVal").textContent=(S.mpts||0)+" / "+mm}}
+  paintAll()}
+const charsIn=t=>t==="insertParagraph"||t==="insertLineBreak"?1:0;
+
+/* ======================= edit lock ======================= */
+// Blocks every way of taking text away: backspace/delete (incl. word & line deletes), cut, drag-move, undo/redo, and typing over a selection.
+ed.addEventListener("beforeinput",e=>{
+  if(timeLocked()){e.preventDefault();nope();return}
+  if(!editBlocking())return;
+  const t=e.inputType||"";
+  if(t.startsWith("delete")||t==="historyUndo"||t==="historyRedo"){
+    let cost=1;if(t.startsWith("delete")){const rs=e.getTargetRanges?e.getTargetRanges():[];cost=Math.max(1,rs.length?rangesText(rs):selCost())}
+    if(spend(cost))return;short(cost);e.preventDefault();nope();return}
+  const s=getSelection();
+  if(t.startsWith("insert")&&t!=="insertReplacementText"&&s.rangeCount&&!s.isCollapsed){const c=selCost();if(spend(c))return;short(c)} // typing over a selection is an edit
+  if(t==="insertText")earn([...(e.data||"")].length);else earn(charsIn(t));
+  if(t.startsWith("insert")&&t!=="insertReplacementText"&&s.rangeCount&&!s.isCollapsed){
+    e.preventDefault();s.collapseToEnd();
+    if(t==="insertParagraph")document.execCommand("insertParagraph");
+    else if(t==="insertLineBreak")document.execCommand("insertLineBreak");
+    else{const txt=e.data!=null?e.data:(e.dataTransfer?e.dataTransfer.getData("text/plain"):"");if(txt)document.execCommand("insertText",false,txt)}
+  }
+});
+/* Tab: in a list, nest the item (Shift+Tab un-nests); elsewhere, insert a tab like Word (Shift+Tab removes one) */
+ed.addEventListener("keydown",e=>{if(e.key!=="Tab"||e.ctrlKey||e.metaKey||e.altKey)return;e.preventDefault();
+  if(timeLocked())return nope();const s=getSelection();if(!s.rangeCount)return;
+  const b=blockOf(s.anchorNode);
+  if(b&&b.closest("li")){document.execCommand(e.shiftKey?"outdent":"indent");ed.dispatchEvent(new Event("input"));paintFmt();return}
+  if(e.shiftKey){if(!s.isCollapsed)return;const n=s.anchorNode,o=s.anchorOffset;
+    if(n.nodeType===3&&o>0&&n.nodeValue[o-1]==="\t"){if(editBlocking()&&!spend(1))return nope();const rg=document.createRange();rg.setStart(n,o-1);rg.setEnd(n,o);rg.deleteContents();ed.dispatchEvent(new Event("input"))}
+    return}
+  if(!s.isCollapsed&&editBlocking()){const c=selCost();if(!spend(c)){short(c);s.collapseToEnd()}}
+  document.execCommand("insertText",false,"\t");if(editBlocking())earn(1)});
+ed.addEventListener("keydown",e=>{ // hardware keyboards on iPad / Mac
+  if(timeLocked()&&!e.metaKey&&!e.ctrlKey&&e.key.length<=1){e.preventDefault();return}
+  if(!editBlocking())return;const k=e.key.toLowerCase();
+  if(k==="backspace"||k==="delete"||((e.metaKey||e.ctrlKey)&&(k==="z"||k==="y"||k==="x"))){if(ptsOn()&&S.pts>0)return; /* beforeinput charges the exact cost */e.preventDefault();nope()}});
+ed.addEventListener("cut",e=>{if(timeLocked()||(editBlocking()&&!(ptsOn()&&S.pts>0))){e.preventDefault();nope()}}); // with points, the cut is paid for when it happens
+let nopeAt=0;
+function nope(){const lb=$("#lockBtn");lb.classList.remove("bump");void lb.offsetWidth;lb.classList.add("bump");if(now()-nopeAt>250){thud();nopeAt=now()}if(timeLocked()){const p=$("#page");p.classList.remove("bump");void p.offsetWidth;p.classList.add("bump")}}
+
+function editBlocking(){const st=S.settings;if(!st.editLock||editBreak())return false;return st.mode==="always"||!!S.sprint}
+
+/* ======================= after each sprint: rest or edit ======================= */
+// Rest = writing is locked (the old time lock). Edit = the edit lock lifts so you can revise.
+const brkOn=k=>!!S.brk&&S.brk.kind===k&&S.brk.until>now();
+const idleRest=()=>S.settings.idleRest&&!S.sprint&&!editBreak()&&!brkOn("rest");
+const timeLocked=()=>brkOn("rest")||idleRest();
+const editBreak=()=>brkOn("edit");
+function startStep(docId,i){const st=S.settings.steps[i];if(!st)return false;
+  S.brk={kind:st.k,until:now()+st.m*60000,docId:docId||null,idx:i};save();if(st.k==="rest")ed.blur();paintAll();if(openSheet===$("#sprintSheet"))paintSteps();return true}
+function startBreak(docId){startStep(docId,0)}
+const stepName=k=>k==="rest"?"Rest":"Editing time";
+// a step is over (natural: its time ran out or you chose to move on): run the next step, or finish the round
+function advance(natural,quietEnd){const b=S.brk;if(!b)return;const nx=S.settings.steps[(b.idx||0)+1];
+  S.brk=null;save();
+  if(nx){startStep(b.docId,(b.idx||0)+1);chime();toast(`${stepName(nx.k)}: ${nx.m} min`);notify(stepName(b.kind)+" over",`${stepName(nx.k)} for ${nx.m} min.`);return}
+  if(natural&&S.settings.repeat&&!S.sprint){if(nextSprint(b.docId))notify(stepName(b.kind)+" over",`Next sprint started: ${S.settings.minutes} min.`);return}
+  paintAll();if(!quietEnd){chime();toast(b.kind==="rest"?"Rest's over. Back to it.":"Editing time's over. Edit lock's back.");notify(stepName(b.kind)+" over",b.kind==="rest"?"Back to it.":"Edit lock's back.")}}
+function nextLabel(){const b=S.brk,nx=b&&S.settings.steps[(b.idx||0)+1];return nx?(nx.k==="rest"?"Rest now":"Edit now"):S.settings.repeat?"Start next sprint":"Done editing"}
+function endBreak(msg){S.brk=null;save();paintAll();if(msg){chime();toast(msg)}}
+function nextSprint(docId){const doc=docId&&S.docs.find(x=>x.id===docId);if(!doc)return false;if(!cur||cur.id!==doc.id){flush();openDoc(doc.id)}startSprint();toast(`Next sprint: ${S.settings.minutes} min. Go.`);return true}
+$("#brkGo").onclick=()=>{if(idleRest()){hap();openSprintSheet(false);return}if(!S.brk)return;hap();advance(true)};
+// hold for 3 seconds to break the lock early
+(()=>{const h=$("#hold"),f=$("#holdFill");let raf=0,t0=0,lastQ=-1;
+  const stop=()=>{cancelAnimationFrame(raf);raf=0;f.style.transition="transform .3s";f.style.transform="scaleX(0)";lastQ=-1};
+  const step=()=>{const p=Math.min(1,(now()-t0)/3000);f.style.transform="scaleX("+p+")";const q=Math.floor(p*6);if(q!==lastQ){lastQ=q;tick()}if(p>=1){stop();hap();(()=>{const nx=S.brk&&S.settings.steps[(S.brk.idx||0)+1];if(nx)advance(false,true);else{advance(false,true);chime();toast("Unlocked early")}})();return}raf=requestAnimationFrame(step)};
+  h.addEventListener("pointerdown",e=>{e.preventDefault();t0=now();f.style.transition="none";hap();raf=requestAnimationFrame(step)});
+  ["pointerup","pointerleave","pointercancel"].forEach(ev=>h.addEventListener(ev,()=>{if(raf)stop()}));
+  h.addEventListener("contextmenu",e=>e.preventDefault())})();
+
+/* ======================= sprint ======================= */
+function startSprint(quiet){if(!cur)return;if(brkOn("rest")){toast("Resting. Hold to unlock to start early.");return}if(S.brk)S.brk=null;
+  flush();const m=S.settings.minutes;S.sprint={id:uid(),docId:cur.id,startedAt:now(),endsAt:now()+m*60000,minutes:m,wordsStart:liveWords};save();
+  if(quiet===true){paintAll();return}
+  hap();chime();hideSheet();paintAll();refreshWords();setTimeout(()=>{ed.focus()},350)}
+function finishSprint(natural){const sp=S.sprint;if(!sp)return;flush();
+  const d=S.docs.find(x=>x.id===sp.docId);const wEnd=cur&&cur.id===sp.docId?liveWords:(d?d.words:sp.wordsStart);
+  S.sprints.push({id:sp.id,docId:sp.docId,startedAt:sp.startedAt,endedAt:now(),minutes:sp.minutes,words:wEnd-sp.wordsStart,full:natural});
+  S.sprint=null;save();
+  if(natural){bell();hap()}else thud();
+  const g=wEnd-sp.wordsStart;toast((natural?"Sprint done":"Sprint ended")+" · "+(g>=0?"+":"")+g.toLocaleString()+" words");
+  if(natural)notify("Sprint done",(g>=0?"+":"")+g.toLocaleString()+" words on "+(d?d.title||"Untitled":"your page")+(S.settings.steps[0]?`. ${stepName(S.settings.steps[0].k)} for ${S.settings.steps[0].m} min.`:"."));
+  if(!startStep(sp.docId,0)&&natural&&S.settings.repeat)setTimeout(()=>{if(!S.sprint&&!S.brk)nextSprint(sp.docId)},1500);paintAll();refreshWords();if(!$("#shelf").hidden)renderShelf()}
+$("#startBtn").onclick=startSprint;
+$("#endBtn").onclick=()=>{const b=$("#endBtn");if(b.dataset.sure){delete b.dataset.sure;b.textContent="End sprint";hideSheet();finishSprint(false)}else{b.dataset.sure=1;b.textContent="Tap to confirm";hap();setTimeout(()=>{delete b.dataset.sure;b.textContent="End sprint"},2500)}};
+$("#plus5").onclick=()=>{if(!S.sprint)return;S.sprint.endsAt+=5*60000;S.sprint.minutes+=5;save();tick();hap();paintAll()};
+$("#pill").onclick=()=>{flush();openSprintSheet(false)};
+(()=>{const lb=$("#lockBtn");let t=null,held=false;
+  lb.addEventListener("pointerdown",e=>{e.preventDefault();held=false;t=setTimeout(()=>{t=null;held=true;hap();ed.blur();openSprintSheet(true)},480)});
+  lb.addEventListener("pointerup",()=>{if(t){clearTimeout(t);t=null;if(!held)toggleEditLock()}});
+  ["pointerleave","pointercancel"].forEach(ev=>lb.addEventListener(ev,()=>{if(t){clearTimeout(t);t=null}}));
+  lb.addEventListener("contextmenu",e=>e.preventDefault());
+  lb.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();toggleEditLock()}})})();
+function toggleEditLock(){const st=S.settings;st.editLock=!st.editLock;save();tick();hap();
+  const name={always:"all the time",sprints:"during sprints"}[st.mode]||"during sprints";
+  if(st.editLock)toast(`Edit lock on, ${name}`+(st.lockTip?"":". Hold the lock for settings."));else toast("Edit lock off");
+  if(st.editLock&&!st.lockTip){st.lockTip=true;save()}
+  if(openSheet===$("#sprintSheet"))paintSprintSheet();paintAll()}
+function openSprintSheet(toLocks){paintSprintSheet();showSheet($("#sprintSheet"));if(toLocks)setTimeout(()=>$("#locksKick").scrollIntoView({behavior:"smooth",block:"start"}),200);else $("#sprintSheet .sheet-body").scrollTop=0}
+
+/* the dial: wind it like a kitchen timer. One turn = 60 minutes; keep turning for more. */
+const DIAL={cx:120,cy:120,r:94};const CIRC=2*Math.PI*DIAL.r;
+(function buildDial(){let t="";for(let i=0;i<60;i++){const a=i/60*2*Math.PI,big=i%5===0,r1=DIAL.r+(big?17:19),r2=DIAL.r+24;t+=`<line x1="${DIAL.cx+Math.sin(a)*r1}" y1="${DIAL.cy-Math.cos(a)*r1}" x2="${DIAL.cx+Math.sin(a)*r2}" y2="${DIAL.cy-Math.cos(a)*r2}" stroke="var(--faint)" stroke-width="${big?2:1}" stroke-linecap="round" opacity="${big?.9:.45}"/>`}
+  $("#dialSvg").innerHTML=`<defs><filter id="sh" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-opacity=".25"/></filter></defs>${t}<circle cx="120" cy="120" r="${DIAL.r}" fill="none" stroke="var(--field)" stroke-width="20"/><circle id="dialHours" cx="120" cy="120" r="${DIAL.r}" fill="none" stroke="var(--gold-soft)" stroke-width="20" opacity="0"/><circle id="dialArc" cx="120" cy="120" r="${DIAL.r}" fill="none" stroke="var(--gold-fill)" stroke-width="20" stroke-linecap="round" stroke-dasharray="${CIRC}" stroke-dashoffset="${CIRC}" transform="rotate(-90 120 120)"/><g id="hourDots"></g><circle class="thumb" id="thumb" r="14" fill="var(--raise)" stroke="var(--gold-fill)" stroke-width="3" filter="url(#sh)"/>`})();
+let dialVal=S.settings.minutes;
+function paintDial(){const m=dialVal,frac=(m%60)/60,full=m>=60&&m%60===0;
+  $("#dialArc").setAttribute("stroke-dashoffset",CIRC*(1-(full?1:frac)));
+  $("#dialHours").setAttribute("opacity",m>=60?1:0);
+  const a=(full?1:frac)*2*Math.PI;const th=$("#thumb");th.setAttribute("cx",DIAL.cx+Math.sin(a)*DIAL.r);th.setAttribute("cy",DIAL.cy-Math.cos(a)*DIAL.r);
+  const hrs=Math.floor((m-(full?1:0))/60);let dots="";for(let i=0;i<Math.min(hrs,8);i++)dots+=`<circle cx="${120-(Math.min(hrs,8)-1)*6+i*12}" cy="168" r="3.2" fill="var(--gold-fill)"/>`;$("#hourDots").innerHTML=dots;
+  if(document.activeElement!==$("#dialNum"))$("#dialNum").value=m;
+  document.querySelectorAll("#chips .chip").forEach(c=>c.classList.toggle("on",+c.dataset.m===m))}
+function setMinutes(m,quiet){m=Math.max(1,Math.min(600,Math.round(m)||1));if(m!==dialVal&&!quiet){tick()}dialVal=m;S.settings.minutes=m;save();paintDial();if(S.settings.steps)paintSteps()}
+(()=>{const d=$("#dial");let last=null,acc=0,lastHap=0;
+  const ang=e=>{const r=d.getBoundingClientRect();return Math.atan2(e.clientX-(r.left+r.width/2),-(e.clientY-(r.top+r.height/2)))};
+  d.addEventListener("pointerdown",e=>{if(e.target.closest("input"))return;e.preventDefault();d.setPointerCapture(e.pointerId);last=ang(e);acc=dialVal;d.classList.add("dragging");hap();$("#dialNum").blur()});
+  d.addEventListener("pointermove",e=>{if(last==null)return;const a=ang(e);let da=a-last;if(da>Math.PI)da-=2*Math.PI;if(da<-Math.PI)da+=2*Math.PI;last=a;acc=Math.max(1,Math.min(600,acc+da/(2*Math.PI)*60));const m=Math.round(acc);if(m!==dialVal){setMinutes(m);if(m%5===0&&now()-lastHap>60){hap();lastHap=now()}}});
+  const up=()=>{if(last==null)return;last=null;d.classList.remove("dragging")};d.addEventListener("pointerup",up);d.addEventListener("pointercancel",up)})();
+$("#dialNum").addEventListener("change",e=>setMinutes(+e.target.value));
+$("#dialNum").addEventListener("keydown",e=>{if(e.key==="Enter")e.target.blur()});
+$("#chips").innerHTML=[10,15,25,45,60,90].map(m=>`<button class="chip tap" data-m="${m}">${m}</button>`).join("");
+$("#chips").onclick=e=>{const c=e.target.closest(".chip");if(c){setMinutes(+c.dataset.m);hap()}};
+
+function paintSprintSheet(){const st=S.settings,run=!!S.sprint;
+  $("#setup").hidden=run;$("#live").hidden=!run;$("#sprintH").textContent=run?"Sprinting":"Sprint";
+  dialVal=st.minutes;paintDial();
+  sw($("#swEdit"),st.editLock,v=>{st.editLock=v;save();paintLocks();paintAll()});
+  sw($("#swMBack"),st.mBack,v=>{st.mBack=v;save();toast(v?"Moving forward is free. Only moving back costs points.":"Every move costs points.")});
+  sw($("#swRepeat"),st.repeat,v=>{st.repeat=v;save();paintSteps()});
+  sw($("#swIdle"),st.idleRest,v=>{st.idleRest=v;save();paintAll();toast(v?"Writing is locked between sprints":"Writing is open between sprints")});
+  $("#ptsMax").value=st.ptsMax;$("#mMax").value=st.mMax;paintPts();
+  paintLocks();requestAnimationFrame(()=>{seg($("#modeSeg"),st.mode,v=>{st.mode=v;save();paintLocks();paintAll()})})}
+const ICON={edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5l4 4M4 20l1-5L15.5 4.5a2.1 2.1 0 0 1 3 0l1 1a2.1 2.1 0 0 1 0 3L9 19z"/></svg>',rest:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14.5A7.5 7.5 0 0 1 9.5 5a7.5 7.5 0 1 0 9.5 9.5z"/></svg>'};
+function paintSteps(){const st=S.settings,list=st.steps,cur_i=S.brk?S.brk.idx:-1;
+  if($("#stepsList").contains(document.activeElement)&&document.activeElement.tagName==="INPUT")return;
+  $("#stepsList").innerHTML=list.map((x,i)=>`<div class="srow${i===cur_i?" now":""}" role="listitem"><span class="n">${i+1}</span><button class="kind tap ${x.k}" data-k="${i}" aria-label="${x.k==="rest"?"Rest":"Edit"}, tap to switch">${ICON[x.k]}${x.k==="rest"?"Rest":"Edit"}</button><span class="mins"><input class="num" data-m="${i}" type="number" inputmode="numeric" min="1" max="360" value="${x.m}" aria-label="Minutes">min</span>${i?`<button class="sb" data-up="${i}" aria-label="Move up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>`:'<span style="width:34px"></span>'}<button class="sb" data-x="${i}" aria-label="Remove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>`).join("");
+  $(".addrow").hidden=list.length>=6;
+  let f=`<span class="fs sprint">Sprint ${st.minutes}</span>`;list.forEach(x=>{f+=`<span class="ar">→</span><span class="fs ${x.k}">${x.k==="rest"?"Rest":"Edit"} ${x.m}</span>`});
+  f+=st.repeat?`<span class="ar">→</span><span class="rp" title="Repeats">↻</span>`:(list.length?"":`<span class="ar">then stop</span>`);$("#flowLine").innerHTML=f;
+  $("#repeatHelp").textContent=list.length?"When the last step is over, the next sprint starts by itself.":"The next sprint starts as soon as one ends."}
+function paintLocks(){const st=S.settings;$("#editOpts").hidden=!st.editLock;paintSteps();
+  requestAnimationFrame(()=>{if($("#modeSeg")._paint&&st.editLock)$("#modeSeg")._paint(st.mode)})}
+$("#stepsList").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const L=S.settings.steps;
+  if(b.dataset.k!=null){const x=L[+b.dataset.k];x.k=x.k==="rest"?"edit":"rest";if(x.k==="edit"&&!S.settings.editLock)toast("Your edit lock is off, so Edit is just a timed break.")}
+  else if(b.dataset.up!=null){const i=+b.dataset.up;[L[i-1],L[i]]=[L[i],L[i-1]]}
+  else if(b.dataset.x!=null)L.splice(+b.dataset.x,1);
+  save();tick();hap();paintSteps()});
+$("#stepsList").addEventListener("change",e=>{const t=e.target.closest("[data-m]");if(!t)return;const v=Math.max(1,Math.min(360,Math.round(+t.value)||5));S.settings.steps[+t.dataset.m].m=v;t.value=v;save();tick();t.blur();paintSteps()});
+$("#stepsList").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.matches("input"))e.target.blur()});
+$("#stepsList").addEventListener("focusout",()=>setTimeout(()=>{if(!$("#stepsList").contains(document.activeElement))paintSteps()},0));
+document.querySelector(".addrow").addEventListener("click",e=>{const b=e.target.closest("[data-add]");if(!b)return;S.settings.steps.push({k:b.dataset.add,m:5});save();tick();hap();paintSteps();
+  if(b.dataset.add==="edit"&&!S.settings.editLock)toast("Your edit lock is off, so Edit is just a timed break.")});
+const numIn=(el,key,lo,hi,after)=>el.addEventListener("change",()=>{const v=Math.max(lo,Math.min(hi,Math.round(+el.value)||lo));el.value=v;S.settings[key]=v;save();tick();after&&after()});
+numIn($("#ptsMax"),"ptsMax",0,9999,()=>{S.pts=Math.min(S.pts,S.settings.ptsMax);save();paintPts()});numIn($("#mMax"),"mMax",0,9999,()=>{S.mpts=Math.min(S.mpts||0,S.settings.mMax);save();paintPts()});
+document.querySelectorAll(".num").forEach(n=>n.addEventListener("keydown",e=>{if(e.key==="Enter")n.blur()}));
+
+/* ======================= critiques ======================= */
+let scope="sprint",showDone=false;
+$("#critBtn").onclick=()=>openCrit(S.sprint&&cur&&S.sprint.docId===cur.id?"sprint":"doc");
+$("#shelfCrit").onclick=()=>openCrit("all");
+function openCrit(sc){scope=sc;showSheet($("#critSheet"));requestAnimationFrame(()=>seg($("#scopeSeg"),scope,v=>{scope=v;renderCrit()}));renderCrit()}
+function critScope(){const list=S.critiques;if(scope==="sprint"){const sp=S.sprint||lastSprintFor(cur);return sp?list.filter(c=>c.sprintId===sp.id):[]}if(scope==="doc")return cur?list.filter(c=>c.docId===cur.id):[];return list}
+function lastSprintFor(d){if(!d)return null;for(let i=S.sprints.length-1;i>=0;i--)if(S.sprints[i].docId===d.id)return S.sprints[i];return null}
+function renderCrit(){const inDoc=!!cur&&!$("#editor").hidden;
+  $("#addbox").hidden=!inDoc;$("#scopeSeg").hidden=!inDoc;if(!inDoc)scope="all";
+  $("#critFor").textContent=S.sprint&&cur&&S.sprint.docId===cur.id?"Goes with this sprint":"Goes with this page";
+  const items=critScope().slice().sort((a,b)=>b.created-a.created);const open=items.filter(c=>!c.resolved),done=items.filter(c=>c.resolved);
+  const docName=id=>{const d=S.docs.find(x=>x.id===id);return d?d.title||"Untitled":"Deleted page"};
+  const row=c=>`<div class="crit${c.resolved?" done":""}" data-c="${c.id}"><button class="check tap" data-t="${c.id}" aria-label="${c.resolved?"Mark open":"Mark resolved"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button><div class="tx"><p>${esc(c.text)}</p><small>${scope==="all"?esc(docName(c.docId))+" · ":""}${esc(when(c.created))}</small></div><button class="x" data-x="${c.id}" aria-label="Delete"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>`;
+  const emptyMsg=scope==="sprint"?(S.sprint||lastSprintFor(cur)?"Nothing open for this sprint.":"No sprint yet. Critiques you add now go with this page."):"Nothing open. Nice.";
+  $("#critOpen").innerHTML=`<div class="clist">${open.length?open.map(row).join(""):`<div class="none">${emptyMsg}</div>`}</div>`;
+  $("#fold").hidden=!done.length;$("#fold").classList.toggle("open",showDone);$("#foldTxt").textContent="Resolved ("+done.length+")";
+  $("#critDone").hidden=!showDone||!done.length;$("#critDone").innerHTML=`<div class="clist">${done.map(row).join("")}</div>`;
+  paintBadges()}
+$("#fold").onclick=()=>{showDone=!showDone;tick();renderCrit()};
+function addCrit(){const t=$("#critIn").value.trim();if(!t||!cur)return;const sp=S.sprint&&S.sprint.docId===cur.id?S.sprint.id:null;
+  S.critiques.push({id:uid(),text:t,docId:cur.id,sprintId:sp,created:now(),resolved:false});save();$("#critIn").value="";autoGrow();tick();hap();
+  if(scope==="sprint"&&!sp){scope="doc";seg($("#scopeSeg"),"doc",v=>{scope=v;renderCrit()})}renderCrit()}
+$("#critAdd").onclick=addCrit;
+const autoGrow=()=>{const t=$("#critIn");t.style.height="auto";t.style.height=Math.max(52,t.scrollHeight)+"px"};
+$("#critIn").addEventListener("input",autoGrow);
+$("#critIn").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();addCrit()}});
+$("#critSheet").addEventListener("click",e=>{const t=e.target.closest("[data-t]"),x=e.target.closest("[data-x]");
+  if(t){const c=S.critiques.find(c=>c.id===t.dataset.t);c.resolved=!c.resolved;c.resolvedAt=c.resolved?now():null;save();hap();c.resolved?tone(1320,.18,.05,"sine"):tick();
+    t.closest(".crit").classList.toggle("done",c.resolved);setTimeout(renderCrit,c.resolved?650:0)}
+  if(x){if(x.dataset.sure){S.critiques=S.critiques.filter(c=>c.id!==x.dataset.x);save();thud();renderCrit()}else{x.dataset.sure=1;x.style.color="var(--bad)";hap();setTimeout(()=>{if(x.isConnected){delete x.dataset.sure;x.style.color=""}},2200)}}});
+function paintBadges(){if(!cur)return;const sp=S.sprint&&S.sprint.docId===cur.id?S.sprint.id:null;const n=S.critiques.filter(c=>!c.resolved&&(sp?c.sprintId===sp:c.docId===cur.id)).length;const b=$("#critBadge");b.hidden=!n;b.textContent=n}
+
+/* ======================= painting / clock ======================= */
+function paintAll(){
+  const run=S.sprint,mine=run&&cur&&run.docId===cur.id;
+  // sprint pill
+  const pill=$("#pill");pill.classList.toggle("on",!!run);
+  if(run){const left=run.endsAt-now(),tot=run.endsAt-run.startedAt;$("#pillLbl").textContent=fmtT(left)+(mine?"":" ·");$("#pillArc").setAttribute("stroke-dashoffset",72.26*(1-Math.min(1,(tot-left)/tot)));$("#pillDot").setAttribute("fill","var(--gold-fill)")}
+  else{$("#pillLbl").textContent=idleRest()?"Resting":timeLocked()?"Rest "+fmtT(S.brk.until-now()):editBreak()?"Edit "+fmtT(S.brk.until-now()):"Sprint";$("#pillArc").setAttribute("stroke-dashoffset",72.26);$("#pillDot").setAttribute("fill","var(--faint)")}
+  // sheet live view
+  if(run&&!$("#live").hidden){const left=run.endsAt-now(),tot=run.endsAt-run.startedAt;$("#count").textContent=fmtT(left);$("#progFill").style.transform="scaleX("+Math.min(1,(tot-left)/tot)+")";const g=(mine?liveWords:run.wordsStart)-run.wordsStart;$("#countSub").textContent=`${run.minutes} min sprint · ${g>=0?"+":""}${g.toLocaleString()} words so far`}
+  if(openSheet===$("#sprintSheet")&&(!!run)===$("#live").hidden)paintSprintSheet();
+  // edit lock button
+  const st=S.settings,lb=$("#lockBtn"),blocking=editBlocking();
+  lb.classList.toggle("armed",st.editLock);lb.classList.toggle("blocking",blocking);
+  $("#shackle").setAttribute("d",blocking?"M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3":"M8.5 10.5V7.5a3.5 3.5 0 0 1 6.6-1.6");
+  $("#lockTxt").textContent=!st.editLock?"":[ptsOn()?String(S.pts):"",mOn()?"↔"+(S.mpts||0):""].filter(Boolean).join(" ");
+  // rest / editing time banner
+  const tl=timeLocked(),eb=editBreak(),bn=$("#tlock");bn.hidden=!(tl||eb);bn.classList.toggle("edit",eb);$("#page").classList.toggle("locked",tl);
+  const want=tl?"false":"true";if(ed.getAttribute("contenteditable")!==want){ed.setAttribute("contenteditable",want);if(tl)ed.blur()}
+  const ir=idleRest();
+  if(tl||eb){$("#tlockLeft").textContent=ir?"":fmtT(S.brk.until-now());$("#brkName").textContent=ir?"Resting":tl?"Rest":"Editing time";
+    const nx=S.brk&&st.steps[(S.brk.idx||0)+1],then=nx?` Then ${nx.k==="rest"?"rest":"edit"} for ${nx.m} min.`:st.repeat?" Then the next sprint.":"";
+    $("#brkNote").textContent=ir?"Writing opens when you start a sprint. Critiques still work.":tl?"Writing's paused. Critiques still work."+then:"Delete and revise freely."+then;
+    $("#hold").hidden=!tl||ir;$("#brkGo").hidden=!(eb||ir);$("#brkGo").textContent=ir?"Start a sprint":nextLabel()}
+  paintBadges();
+}
+function loop(){
+  if(S.sprint&&now()>=S.sprint.endsAt){ // mid-thought when the time runs out? the sprint waits for a pause (up to 10 min)
+    const hold=S.settings.fOver&&cur&&cur.id===S.sprint.docId&&now()-lastTypeAt<5000&&now()-S.sprint.endsAt<600000;
+    if(!hold)finishSprint(true)}
+  if(S.brk&&S.brk.until<=now()){
+    // carry on through the steps, but not if Rill was closed long after the step ran out
+    if(now()-S.brk.until<120000)advance(true);else endBreak()}
+  if(!$("#editor").hidden)paintAll();else if(S.sprint)paintRunning();
+}
+setInterval(loop,250);
+
+/* ======================= .docx in / out ======================= */
+// Keep only what Rill edits: paragraphs, three heading levels, lists, bold / italic / underline, line breaks.
+function clean(html){const t=document.createElement("template");t.innerHTML=html;const out=document.createElement("div");
+  const inl=(node,par)=>{for(const c of [...node.childNodes]){if(c.nodeType===3){par.appendChild(document.createTextNode(c.nodeValue));continue}if(c.nodeType!==1)continue;const g=c.tagName;
+      if(g==="BR"){par.appendChild(document.createElement("br"));continue}if(g==="UL"||g==="OL"||g==="IMG"||g==="TABLE")continue;
+      const w=g==="STRONG"||g==="B"?"b":g==="EM"||g==="I"?"i":g==="U"?"u":g==="S"||g==="DEL"||g==="STRIKE"?"s":null;if(w){const x=document.createElement(w);inl(c,x);par.appendChild(x)}else inl(c,par)}};
+  const mk=(tag,src)=>{const e=document.createElement(tag);inl(src,e);if(!e.textContent.trim()&&!e.querySelector("br"))e.innerHTML="<br>";const m=/\bal-(center|right|justify)\b/.exec(src.className||"");if(m)e.style.textAlign=m[1];return e};
+  const list=(c,par)=>{const l=document.createElement(c.tagName.toLowerCase());for(const li of c.children){if(li.tagName==="LI"){l.appendChild(mk("li",li));for(const sub of li.querySelectorAll(":scope>ul,:scope>ol"))list(sub,l)}else if(/^(UL|OL)$/.test(li.tagName))list(li,l)}if(l.children.length)par.appendChild(l)};
+  const blk=(node,par)=>{for(const c of [...node.childNodes]){if(c.nodeType===3){if(c.nodeValue.trim()){const p=document.createElement("p");p.textContent=c.nodeValue;par.appendChild(p)}continue}if(c.nodeType!==1)continue;const g=c.tagName;
+      if(/^H[1-6]$/.test(g))par.appendChild(mk(g<="H3"?g.toLowerCase():"h3",c));
+      else if(g==="UL"||g==="OL")list(c,par);
+      else if(g==="BLOCKQUOTE"){const q=document.createElement("blockquote");blk(c,q);if(q.children.length)par.appendChild(q)}
+      else if(g==="P"||(g==="DIV"&&!c.querySelector("p,div,h1,h2,h3,h4,h5,h6,ul,ol,table,blockquote")))par.appendChild(mk("p",c));
+      else if(g==="BR")par.appendChild(Object.assign(document.createElement("p"),{innerHTML:"<br>"}));
+      else if(g==="IMG")continue;
+      else blk(c,par)}};
+  blk(t.content,out);return out.innerHTML}
+
+const XML_BAD=/[^\x09\x0A\x0D\x20-퟿-�\u{10000}-\u{10FFFF}]/gu;
+const x=s=>String(s).replace(XML_BAD,"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function buildDocx(html,title,fmt){
+  fmt={font:"serif",lh:"1.15",para:"space",...(fmt||{})};
+  const root=document.createElement("div");root.innerHTML=html;
+  const paras=[];const olLvl=[];
+  const runs=(node,m,arr)=>{for(const c of node.childNodes){if(c.nodeType===3){if(c.nodeValue)arr.push({t:c.nodeValue.replace(/[\n ]/g," "),m});continue}if(c.nodeType!==1)continue;const g=c.tagName;
+      if(g==="BR"){arr.push({br:1});continue}if(/^(P|DIV|H[1-6]|LI|UL|OL|BLOCKQUOTE)$/.test(g))continue;
+      const n={...m};const st=c.style||{},fw=st.fontWeight,td=(st.textDecoration||"")+" "+(st.textDecorationLine||"");
+      if(g==="B"||g==="STRONG"||fw==="bold"||+fw>=600)n.b=1;if(g==="I"||g==="EM"||st.fontStyle==="italic")n.i=1;if(g==="U"||/underline/.test(td))n.u=1;if(g==="S"||g==="STRIKE"||g==="DEL"||/line-through/.test(td))n.s=1;
+      runs(c,n,arr)}};
+  const alignFrom=src=>{for(let e=src;e&&e!==root;e=e.parentNode){const a=(e.style&&e.style.textAlign)||(e.getAttribute&&e.getAttribute("align"));if(a)return {center:"center",right:"right",end:"right",justify:"both"}[a]||null}return null};
+  const para=(el,style,num,lvl,src)=>{src=src||el;const r=[];runs(el,{},r);while(r.length&&r[r.length-1].br)r.pop();paras.push({style,num,lvl:lvl||0,r,jc:alignFrom(src),ind:+(src.dataset&&src.dataset.ind)||0})};
+  const list=(el,lvl)=>{let id=1;if(el.tagName==="OL"){olLvl.push(lvl);id=1+olLvl.length}
+    for(const li of el.children){if(/^(UL|OL)$/.test(li.tagName)){list(li,Math.min(8,lvl+1));continue}if(li.tagName!=="LI")continue;
+      const cl=li.cloneNode(true);cl.querySelectorAll("ul,ol").forEach(x=>x.remove());para(cl,"ListParagraph",id,lvl,li);
+      for(const sub of li.querySelectorAll(":scope>ul,:scope>ol"))list(sub,Math.min(8,lvl+1))}};
+  const walk=(node,quote)=>{let loose=[];const flushLoose=()=>{if(loose.length){const d=document.createElement("p");loose.forEach(n=>d.appendChild(n.cloneNode(true)));para(d,quote?"Quote":null,0,0,node);loose=[]}};
+    for(const c of node.childNodes){const g=c.nodeType===1?c.tagName:null;
+      if(g&&/^(P|DIV)$/.test(g)){flushLoose();if(!c.childNodes.length)continue;if(c.querySelector("p,div,h1,h2,h3,ul,ol,blockquote"))walk(c,quote);else para(c,quote?"Quote":null)}
+      else if(g&&/^H[1-6]$/.test(g)){flushLoose();para(c,"Heading"+Math.min(3,+g[1]))}
+      else if(g==="BLOCKQUOTE"){flushLoose();walk(c,true)}
+      else if(g==="UL"||g==="OL"){flushLoose();list(c,0)}
+      else if(g==="LI"){flushLoose();para(c,"ListParagraph",1)}
+      else if(c.nodeType===3&&!c.nodeValue.trim()&&!loose.length)continue;
+      else loose.push(c)}
+    flushLoose()};
+  walk(root,false);if(!paras.length)paras.push({r:[]});
+  const rx=r=>{if(r.br)return '<w:r><w:br/></w:r>';let p="";if(r.m.b)p+="<w:b/><w:bCs/>";if(r.m.i)p+="<w:i/><w:iCs/>";if(r.m.s)p+="<w:strike/>";if(r.m.u)p+='<w:u w:val="single"/>';return `<w:r>${p?"<w:rPr>"+p+"</w:rPr>":""}${r.t.split("\t").map(t=>t?`<w:t xml:space="preserve">${x(t)}</w:t>`:"").join("<w:tab/>")}</w:r>`};
+  const body=paras.map(p=>{let pr="";if(p.style)pr+=`<w:pStyle w:val="${p.style}"/>`;if(p.num)pr+=`<w:numPr><w:ilvl w:val="${p.lvl}"/><w:numId w:val="${p.num}"/></w:numPr>`;
+    if(p.ind&&!p.num)pr+=`<w:ind w:left="${p.ind*720}"/>`;if(p.jc)pr+=`<w:jc w:val="${p.jc}"/>`;return `<w:p>${pr?"<w:pPr>"+pr+"</w:pPr>":""}${p.r.map(rx).join("")}</w:p>`}).join("");
+  const W='xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
+  const doc=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document ${W}><w:body>${body}<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr></w:body></w:document>`;
+  const FONT={serif:"Times New Roman",sans:"Calibri",mono:"Courier New"}[fmt.font]||"Times New Roman";
+  const LINE=Math.round(240*(+fmt.lh||1.15));const indentMode=fmt.para==="indent";
+  const hs=(id,name,sz,extra)=>`<w:style w:type="paragraph" w:styleId="${id}"><w:name w:val="${name}"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:uiPriority w:val="9"/><w:qFormat/><w:pPr><w:keepNext/><w:spacing w:before="240" w:after="120"/><w:ind w:firstLine="0"/><w:outlineLvl w:val="${+id.slice(-1)-1}"/></w:pPr><w:rPr><w:b/><w:bCs/>${extra||""}<w:sz w:val="${sz}"/><w:szCs w:val="${sz}"/></w:rPr></w:style>`;
+  const normalPPr=indentMode?`<w:pPr><w:spacing w:after="0"/><w:ind w:firstLine="720"/></w:pPr>`:"";
+  const styles=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles ${W}><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="${FONT}" w:hAnsi="${FONT}" w:eastAsia="${FONT}" w:cs="${FONT}"/><w:sz w:val="24"/><w:szCs w:val="24"/><w:lang w:val="en-US"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="160" w:line="${LINE}" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/>${normalPPr}</w:style>${hs("Heading1","heading 1",36)}${hs("Heading2","heading 2",30)}${hs("Heading3","heading 3",26,"<w:i/><w:iCs/>")}<w:style w:type="paragraph" w:styleId="Quote"><w:name w:val="Quote"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:uiPriority w:val="29"/><w:qFormat/><w:pPr><w:spacing w:before="120" w:after="120"/><w:ind w:left="720" w:right="720" w:firstLine="0"/></w:pPr><w:rPr><w:i/><w:iCs/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="ListParagraph"><w:name w:val="List Paragraph"/><w:basedOn w:val="Normal"/><w:uiPriority w:val="34"/><w:qFormat/><w:pPr><w:spacing w:after="60"/><w:ind w:left="720" w:firstLine="0"/><w:contextualSpacing/></w:pPr></w:style></w:styles>`;
+  const BUL=["•","◦","▪"],DEC=["decimal","lowerLetter","lowerRoman"];
+  const lvls=kind=>Array.from({length:9},(_,i)=>`<w:lvl w:ilvl="${i}"><w:start w:val="1"/><w:numFmt w:val="${kind==="b"?"bullet":DEC[i%3]}"/><w:lvlText w:val="${kind==="b"?BUL[i%3]:"%"+(i+1)+"."}"/><w:lvlJc w:val="left"/><w:pPr><w:ind w:left="${720*(i+1)}" w:hanging="360"/></w:pPr></w:lvl>`).join("");
+  let nums=`<w:num w:numId="1"><w:abstractNumId w:val="0"/></w:num>`;olLvl.forEach((l,i)=>{nums+=`<w:num w:numId="${2+i}"><w:abstractNumId w:val="1"/><w:lvlOverride w:ilvl="${l}"><w:startOverride w:val="1"/></w:lvlOverride></w:num>`});
+  const numbering=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:numbering ${W}><w:abstractNum w:abstractNumId="0"><w:multiLevelType w:val="hybridMultilevel"/>${lvls("b")}</w:abstractNum><w:abstractNum w:abstractNumId="1"><w:multiLevelType w:val="hybridMultilevel"/>${lvls("d")}</w:abstractNum>${nums}</w:numbering>`;
+  const iso=new Date().toISOString().replace(/\.\d+Z$/,"Z");
+  const core=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>${x(title)}</dc:title><dc:creator>Rill</dc:creator><dcterms:created xsi:type="dcterms:W3CDTF">${iso}</dcterms:created><dcterms:modified xsi:type="dcterms:W3CDTF">${iso}</dcterms:modified></cp:coreProperties>`;
+  const z=new JSZip();
+  z.file("[Content_Types].xml",`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>`);
+  z.file("_rels/.rels",`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/></Relationships>`);
+  z.file("word/_rels/document.xml.rels",`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/></Relationships>`);
+  z.file("word/document.xml",doc);z.file("word/styles.xml",styles);z.file("word/numbering.xml",numbering);z.file("docProps/core.xml",core);
+  return z.generateAsync({type:"blob",mimeType:"application/vnd.openxmlformats-officedocument.wordprocessingml.document",compression:"DEFLATE"})}
+
+async function exportDoc(d,saveAs){if(cur===d)flush();
+  if(DESK)return deskSave(d,saveAs);
+  const name=((d.title||"Untitled").replace(/[\\/:*?"<>|]+/g,"").trim()||"Untitled")+".docx";
+  let blob;try{blob=await buildDocx(getHtml(d.id),d.title||"Untitled",d.fmt)}catch(e){console.error(e);toast("Couldn't build the file");return}
+  const file=new File([blob],name,{type:blob.type});
+  const share=async()=>{try{await navigator.share({files:[file]});hideSheet()}catch(e){if(e.name==="NotAllowedError")toast("Your file is ready","Share",share);else if(e.name!=="AbortError")download()}};
+  const download=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},5000);hideSheet()};
+  if(navigator.canShare&&navigator.canShare({files:[file]}))await share();else download()}
+$("#share").onclick=()=>{if(cur){hap();exportDoc(cur)}};
+
+/* ======================= desktop (Windows app) ======================= */
+// In the Windows app, files are real: Save writes back to the .docx you opened, Save As picks a new place.
+async function deskSave(d,saveAs){
+  const name=((d.title||"Untitled").replace(/[\\/:*?"<>|]+/g,"").trim()||"Untitled")+".docx";
+  let target=saveAs?null:d.filePath||null;
+  if(target&&d.fileName&&!d.okOverwrite){ // first save over a file Rill opened: say what Rill keeps
+    const pick=await askOverwrite(d);if(!pick)return;if(pick==="copy")target=null;else{d.okOverwrite=true;save()}}
+  let blob;try{blob=await buildDocx(getHtml(d.id),d.title||"Untitled",d.fmt)}catch(e){console.error(e);toast("Couldn't build the file");return}
+  try{const path=await DESK.save(target,new Uint8Array(await blob.arrayBuffer()),name);if(!path)return;
+    if(path!==d.filePath){d.filePath=path;d.okOverwrite=true}d.dirty=false;save();paintDirty();chime();toast("Saved "+path.split(/[\\/]/).pop())}
+  catch(e){console.error(e);toast("Couldn't save: "+(e.message||"the file may be open in Word"))}}
+function askOverwrite(d){return new Promise(res=>{$("#actH").textContent="Save over the original?";
+  $("#actBody").innerHTML=`<p style="color:var(--muted);font-size:14px;line-height:1.5;padding:0 6px 14px">Rill keeps text, headings, lists, alignment, and bold, italic, underline and strikethrough. ${d.lossy?"This file had images, which Rill left out. They'd be lost from the original.":"Anything else in the original, like images, tables, comments or tracked changes, would be lost."}</p><div class="acts"><button data-a="copy">Save as a copy…</button><button data-a="over">Save over ${esc(d.fileName||"the original")}</button></div>`;
+  let done=false;const fin=v=>{if(done)return;done=true;res(v)};
+  $("#actBody").onclick=e=>{const b=e.target.closest("[data-a]");if(!b)return;fin(b.dataset.a);hideSheet()};
+  showSheet($("#actSheet"));const watch=setInterval(()=>{if(openSheet!==$("#actSheet")){clearInterval(watch);fin(null)}},200)})}
+function notify(title,body){if(!DESK||!DESK.notify)return;try{if(!document.hasFocus())DESK.notify(title,body)}catch(e){}}
+function paintDirty(){const sh=$("#share");if(!sh)return;sh.classList.toggle("dirty",!!(DESK&&cur&&cur.dirty))}
+if(DESK){
+  document.body.classList.add("desk");
+  $("#share").setAttribute("aria-label","Save .docx (Ctrl+S)");$("#share").title="Save (Ctrl+S) · Save As (Ctrl+Shift+S)";
+  $("#share").innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v11.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 18.5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg>';
+  $("#openBtn").onclick=async()=>{const f=await DESK.open();if(f)importDocx(f.data,f.name,f.path)};
+  DESK.onOpenFile(f=>{if(f)importDocx(f.data,f.name,f.path)});
+  ed.addEventListener("input",()=>{if(cur&&!cur.dirty){cur.dirty=true;save();paintDirty()}});
+  document.addEventListener("dragover",e=>{e.preventDefault()});
+  document.addEventListener("drop",async e=>{const f=e.dataTransfer&&e.dataTransfer.files[0];if(!f||!/\.docx$/i.test(f.name))return;e.preventDefault();e.stopPropagation();importDocx(await f.arrayBuffer(),f.name,DESK.pathFor(f))},true);
+  window.addEventListener("beforeunload",flush);
+  document.addEventListener("keydown",e=>{const k=e.key.toLowerCase(),mod=e.ctrlKey||e.metaKey;
+    if(k==="escape"&&openSheet){e.preventDefault();hideSheet();return}
+    if(!mod)return;
+    if(k==="s"){e.preventDefault();if(cur)exportDoc(cur,e.shiftKey)}
+    else if(k==="o"){e.preventDefault();$("#openBtn").click()}
+    else if(k==="n"){e.preventDefault();if(cur)$("#back").click();$("#newBtn").click()}
+    else if(k==="f"&&cur){e.preventDefault();openFind()}
+    else if(k==="e"&&cur&&e.shiftKey){e.preventDefault();toggleEditLock()}});
+}
+
+/* ======================= boot ======================= */
+window.Rill={S,toggleEditLock,buildDocx,clean,editBlocking,timeLocked,finishSprint,openDoc};
+applyTheme();renderShelf();kb();
+if(S.lastDoc&&S.docs.some(d=>d.id===S.lastDoc))openDoc(S.lastDoc); // pick up where you left off
+if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>
