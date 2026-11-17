@@ -358,7 +358,22 @@ body.desk .dock{position:relative;left:auto;right:auto;bottom:auto;transform:non
 body.desk .dock>.bar{border-radius:0;padding:0 10px;min-height:30px;background:var(--ground);box-shadow:0 -1px 0 var(--line);backdrop-filter:none;-webkit-backdrop-filter:none;gap:2px}
 body.desk .pill{height:26px;padding:0 10px 0 4px;border-radius:7px;font-size:12.5px;gap:6px}
 body.desk .pill .ring{width:18px;height:18px}
-body.desk .words{text-align:right;padding-right:10px;font-size:12px;cursor:pointer}
+body.desk .words{text-align:left;padding-left:8px;font-size:12px;cursor:pointer;order:0}
+/* status bar: words on the left; sprint, locks and critiques gathered on the right, beside where their panel opens */
+body.desk .dock>.bar>#pill{order:1}
+body.desk .dock>.bar>#lockBtn{order:2}
+body.desk .dock>.bar>#critBtn{order:3}
+/* the pull tab: a grip on the right edge; drag it out (or click it) for the sprint panel */
+.pull{display:none}
+body.desk .pull{display:flex;position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:30;width:16px;height:96px;border-radius:9px 0 0 9px;background:var(--paper);box-shadow:0 0 0 1px var(--line),-4px 0 14px -8px var(--shadow);align-items:center;justify-content:center;gap:3px;cursor:grab;touch-action:none;transition:width .2s,opacity .3s,background .2s}
+body.desk .pull i{width:2px;height:28px;border-radius:1px;background:var(--faint)}
+body.desk .pull:hover{width:22px;background:var(--raise)}
+body.desk .pull.run i:first-child{background:var(--gold-fill)}
+body.desk .pull.dragging{cursor:grabbing;width:22px}
+body.desk.sheetopen .pull{opacity:0;pointer-events:none}
+body.hush.desk .pull{opacity:0}
+body.desk .sheet .sheet-head{cursor:grab}
+body.desk .sheet .sheet-head button,body.desk .sheet .sheet-head input{cursor:pointer}
 body.desk .dock .icon{width:30px;height:26px;border-radius:7px}
 body.desk .dock .icon svg{width:16px;height:16px}
 body.desk .dock .lockbtn{width:auto;min-width:30px;padding:0 7px;gap:4px;font-size:12px}
@@ -568,7 +583,7 @@ body.sprinting .rill{opacity:1}
         <div class="loopline" id="ptsLine" hidden><span class="pbar"><i id="ptsFill"></i></span><b id="ptsVal" class="g"></b></div>
         <div class="row ptsrow"><div class="lbl">Movement points<small>Earned the same way, up to this max. Each arrow, Home, End or Page Up/Down press spends one. Tapping somewhere costs what it would take with the arrow keys: one per line, then one per character. 0 turns them off.</small></div><input class="num" id="mMax" type="number" inputmode="numeric" min="0" max="9999" aria-label="Most movement points"></div>
         <div class="loopline" id="mLine" hidden><span class="pbar"><i id="mFill"></i></span><b id="mVal" class="g"></b></div>
-        <div class="row" id="mClickRow" hidden style="border-top:0;padding-top:0"><div class="lbl">Clicking costs too<small>Tapping or clicking somewhere new costs what the move would take with the arrow keys. Off: only keys cost.</small></div><button class="sw" role="switch" id="swMClick" aria-checked="true" aria-label="Clicking costs too"></button></div>
+        <div class="row" id="mClickRow" hidden style="border-top:0;padding-top:0"><div class="lbl">Clicks cost the distance<small>A tap or click costs what the move would take with the arrow keys. Off: any click costs 1.</small></div><button class="sw" role="switch" id="swMClick" aria-checked="true" aria-label="Clicks cost the distance"></button></div>
         <div class="row" id="mBackRow" hidden style="border-top:0;padding-top:0"><div class="lbl">Only moving back costs<small>Moving forward is always free: Right, Down, End, Page Down, or tapping further on.</small></div><button class="sw" role="switch" id="swMBack" aria-checked="false" aria-label="Only moving back costs"></button></div>
       </div>
     </div>
@@ -640,6 +655,7 @@ body.sprinting .rill{opacity:1}
   </div>
 </div>
 
+<div class="pull" id="pull" title="Sprint: drag out or click" aria-label="Sprint panel" role="button" tabindex="0"><i></i><i></i></div>
 <div class="toast" id="toast"></div>
 
 <script src="lib/jszip.min.js"></script>
@@ -691,8 +707,8 @@ function toast(msg,btn,fn){const t=$("#toast");t.innerHTML=esc(msg)+(btn?' <butt
 
 /* ======================= sheets ======================= */
 let openSheet=null;
-function showSheet(el){if(openSheet&&openSheet!==el)hideSheet(true);const sc=$("#scrim");sc.hidden=false;requestAnimationFrame(()=>{sc.classList.add("show");el.classList.add("show")});openSheet=el;hap()}
-function hideSheet(quick){if(!openSheet)return;const el=openSheet;openSheet=null;if(el.id==="findSheet")clearFind();$("#scrim").classList.remove("clear");el.classList.remove("show");el.style.transform="";const sc=$("#scrim");sc.classList.remove("show");if(document.activeElement&&el.contains(document.activeElement))document.activeElement.blur();setTimeout(()=>{if(!openSheet)sc.hidden=true},quick?0:300)}
+function showSheet(el){document.body.classList.add("sheetopen");if(openSheet&&openSheet!==el)hideSheet(true);const sc=$("#scrim");sc.hidden=false;requestAnimationFrame(()=>{sc.classList.add("show");el.classList.add("show")});openSheet=el;hap()}
+function hideSheet(quick){if(!openSheet)return;document.body.classList.remove("sheetopen");const el=openSheet;if(DESK)el.style.transform="";openSheet=null;if(el.id==="findSheet")clearFind();$("#scrim").classList.remove("clear");el.classList.remove("show");el.style.transform="";const sc=$("#scrim");sc.classList.remove("show");if(document.activeElement&&el.contains(document.activeElement))document.activeElement.blur();setTimeout(()=>{if(!openSheet)sc.hidden=true},quick?0:300)}
 $("#scrim").onclick=()=>hideSheet();
 // drag a sheet down by its grabber or header to dismiss it
 document.querySelectorAll(".sheet").forEach(sh=>{let y0=null,dy=0;
@@ -999,13 +1015,12 @@ function arrowDist(a,b,cap){
   if(dir&&s.modify)for(let i=0;i<20000&&steps<=cap;i++){const before=cur;s.modify("move",dir,"line");steps++;cur=top();
     if(Math.abs(cur-tb.top)<=3||cur===before||(dir==="forward"?cur>tb.top+3:cur<tb.top-3))break}
   const q=s.getRangeAt(0);return steps+Math.abs(textIdx(q.startContainer,q.startOffset)-textIdx(b.node,b.off))}
-function checkMove(){if(S.settings.mClick===false){const c=selNow();if(c)lastSel=c;return} // clicks are free
-  const s=getSelection(),c=selNow();if(!c||!lastSel||!lastSel.startContainer.isConnected||sameSel(c,lastSel)){if(c)lastSel=c;return}
+function checkMove(){const s=getSelection(),c=selNow();if(!c||!lastSel||!lastSel.startContainer.isConnected||sameSel(c,lastSel)){if(c)lastSel=c;return}
   const A={node:s.anchorNode,off:s.anchorOffset},F={node:s.focusNode,off:s.focusOffset},from={node:lastSel.endContainer,off:lastSel.endOffset};
   if(S.settings.mBack){const o=document.createRange();o.setStart(from.node,from.off);let back=false;try{back=o.comparePoint(A.node,A.off)<0||o.comparePoint(F.node,F.off)<0}catch(e){back=true}
     if(!back){lastSel=c;return}} // only back: a tap further on is free
   const have=S.mpts||0;
-  let cost=arrowDist(from,A,have+1);if(cost<=have&&!c.collapsed)cost+=arrowDist(A,F,have-cost+1);cost=Math.max(1,cost);
+  let cost=1;if(S.settings.mClick!==false){cost=arrowDist(from,A,have+1);if(cost<=have&&!c.collapsed)cost+=arrowDist(A,F,have-cost+1);cost=Math.max(1,cost)} // switch off: any click costs 1
   const nr=document.createRange();nr.setStart(A.node,A.off);nr.collapse(true);s.removeAllRanges();s.addRange(nr);if(!c.collapsed)s.extend(F.node,F.off); // put the new spot back
   if(spendM(cost)){lastSel=selNow();return}
   s.removeAllRanges();s.addRange(lastSel);nope();
@@ -1188,7 +1203,7 @@ function paintSprintSheet(){const st=S.settings,run=!!S.sprint;closeSave();paint
   $("#setup").hidden=run;$("#live").hidden=!run;$("#sprintH").textContent=run?"Sprinting":"Sprint";
   dialVal=st.minutes;paintDial();
   sw($("#swEdit"),st.editLock,v=>{st.editLock=v;save();paintLocks();paintAll()});
-  sw($("#swMClick"),st.mClick!==false,v=>{st.mClick=v;save();toast(v?"Clicking somewhere new costs movement points.":"Clicking is free. Only keys cost movement points.")});
+  sw($("#swMClick"),st.mClick!==false,v=>{st.mClick=v;save();toast(v?"A click costs what the move would take with the arrow keys.":"Any click costs 1 movement point.")});
   sw($("#swMBack"),st.mBack,v=>{st.mBack=v;save();toast(v?"Moving forward is free. Only moving back costs points.":"Every move costs points.")});
   sw($("#swRepeat"),st.repeat,v=>{st.repeat=v;save();paintSteps()});
   sw($("#swIdle"),st.idleRest,v=>{st.idleRest=v;save();paintAll();toast(v?"Writing is locked between sprints":"Writing is open between sprints")});
@@ -1385,6 +1400,21 @@ function notify(title,body){if(!DESK||!DESK.notify)return;try{if(!document.hasFo
 function paintDirty(){const sh=$("#share");if(!sh)return;sh.classList.toggle("dirty",!!(DESK&&cur&&cur.dirty))}
 if(DESK){
   document.body.classList.add("desk");
+  // drag the sprint panel out from the right edge; drag any panel back to the right to put it away
+  (()=>{const tab=$("#pull"),sh=$("#sprintSheet");let x0=null,dx=0,W=0;
+    const go=e=>{if(x0==null)return;dx=Math.max(0,x0-e.clientX);sh.style.transform="translateX("+Math.max(0,W-dx)+"px)"};
+    tab.addEventListener("pointerdown",e=>{if($("#editor").hidden)return;e.preventDefault();tab.setPointerCapture(e.pointerId);paintSprintSheet();x0=e.clientX;dx=0;W=sh.offsetWidth+30;sh.classList.add("drag");tab.classList.add("dragging");sh.style.transform="translateX("+W+"px)"});
+    tab.addEventListener("pointermove",go);
+    const end=()=>{if(x0==null)return;x0=null;tab.classList.remove("dragging");sh.classList.remove("drag");
+      if(dx<5||dx>W*.3){sh.style.transform="";openSprintSheet(false)}else{sh.style.transform=""}};
+    tab.addEventListener("pointerup",end);tab.addEventListener("pointercancel",end);
+    tab.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openSprintSheet(false)}});
+    document.querySelectorAll(".sheet").forEach(s=>{const h=s.querySelector(".sheet-head");let a=null,d=0;
+      h.addEventListener("pointerdown",e=>{if(e.target.closest("button,input"))return;a=e.clientX;d=0;h.setPointerCapture(e.pointerId);s.classList.add("drag")});
+      h.addEventListener("pointermove",e=>{if(a==null)return;d=Math.max(0,e.clientX-a);s.style.transform="translateX("+d+"px)"});
+      const up=()=>{if(a==null)return;a=null;s.classList.remove("drag");if(d>110)hideSheet();else s.style.transform=""};
+      h.addEventListener("pointerup",up);h.addEventListener("pointercancel",up)});
+    setInterval(()=>tab.classList.toggle("run",!!S.sprint),500)})();
   // the toolbar lives under the title, always visible; every panel gets a close button
   const fm=$("#fmt");fm.hidden=false;document.querySelector("#editor .top").after(fm);
   document.querySelectorAll(".sheet-head").forEach(h=>{const b=document.createElement("button");b.className="shx tap";b.setAttribute("aria-label","Close");b.title="Close (Esc)";b.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';b.onclick=()=>hideSheet();h.appendChild(b)});
