@@ -335,6 +335,82 @@ body.desk .scroll::-webkit-scrollbar{width:10px}
 body.desk .scroll::-webkit-scrollbar-thumb{background:var(--press);border-radius:5px;border:3px solid transparent;background-clip:padding-box}
 body.desk .scroll::-webkit-scrollbar-track{background:transparent}
 body.desk .ed{-webkit-user-select:text}
+
+/* ===== Windows app: a desktop layout, closer to Word / Google Docs ===== */
+body.desk{font-size:13.5px}
+/* toolbar: always there, under the title, one flat row (every menu laid out flat) */
+body.desk #fmt{position:relative;z-index:4;display:flex!important;align-self:auto;flex-wrap:nowrap;margin:0 12px 0;padding:3px 8px;border-radius:12px;background:var(--paper);box-shadow:0 0 0 1px var(--line);backdrop-filter:none;-webkit-backdrop-filter:none;overflow-x:auto;scrollbar-width:none;transition:opacity .25s}
+body.desk #fmt::-webkit-scrollbar{display:none}
+body.desk #fmt .fpanel,body.desk #fmt .fpanel[hidden]{display:flex!important;animation:none;overflow:visible;flex:none}
+body.desk #fmt .fpanel+.fpanel::before{content:"";width:1px;height:18px;background:var(--line);margin:0 6px;flex:none}
+body.desk #fmt [data-p],body.desk #fmt [data-cmd=done],body.desk #fmt .back+.sep,body.desk #fmt .fpanel[data-panel=main]>.sep:last-of-type{display:none}
+body.desk #fmt .icon{width:30px;height:30px;border-radius:7px;font-size:14.5px}
+body.desk #fmt .icon svg{width:17px;height:17px}
+body.desk #fmt .wordbtn{width:auto;padding:0 8px;font-size:12.5px;font-weight:550}
+body.desk #fmt .sep{height:18px;margin:0 4px}
+/* the page: letter width with one-inch margins, on a grey desk */
+body.desk .scroll{padding:18px 12px 40px}
+body.desk .page:not(.paged){max-width:816px;padding:96px 96px 50vh;border-radius:2px;min-height:1056px}
+body.desk .tlock{border-radius:10px;margin:8px auto 0;max-width:816px;width:calc(100% - 24px);padding:6px 6px 6px 14px}
+body.desk .tlock .hold,body.desk .tlock .go{min-height:30px;border-radius:8px}
+/* status bar: thin, flat, across the bottom */
+body.desk .dock{position:relative;left:auto;right:auto;bottom:auto;transform:none;width:auto;flex:none;gap:0}
+body.desk .dock>.bar{border-radius:0;padding:0 10px;min-height:30px;background:var(--ground);box-shadow:0 -1px 0 var(--line);backdrop-filter:none;-webkit-backdrop-filter:none;gap:2px}
+body.desk .pill{height:26px;padding:0 10px 0 4px;border-radius:7px;font-size:12.5px;gap:6px}
+body.desk .pill .ring{width:18px;height:18px}
+body.desk .words{text-align:right;padding-right:10px;font-size:12px;cursor:pointer}
+body.desk .dock .icon{width:30px;height:26px;border-radius:7px}
+body.desk .dock .icon svg{width:16px;height:16px}
+body.desk .dock .lockbtn{width:auto;min-width:30px;padding:0 7px;gap:4px;font-size:12px}
+body.desk .dock .icon svg{flex:none}
+body.desk #shelf .shelf-head{padding-left:28px!important;max-width:none!important;margin:0!important}
+body.desk .shelf-head .gap{flex:1}
+body.desk .badge{top:-2px;right:-2px;min-width:15px;height:15px;font-size:9.5px;line-height:15px}
+/* panels open at the side, not from the bottom */
+body.desk .scrim{background:transparent!important}
+body.desk .sheet{left:auto;right:12px;top:58px;bottom:42px;width:380px;max-width:calc(100% - 24px);max-height:none;margin:0;border-radius:14px;box-shadow:0 0 0 1px var(--line),0 18px 50px -18px var(--shadow);transform:translateX(calc(100% + 30px));transition:transform .32s cubic-bezier(.2,.8,.2,1)}
+body.desk .sheet.show{transform:none}
+body.desk .grab{display:none}
+body.desk .sheet-head{padding:14px 10px 8px 18px;touch-action:auto}
+body.desk .sheet-head h2{font-size:17px}
+body.desk .sheet-body{padding:4px 14px 18px}
+body.desk .shx{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:var(--muted)}
+body.desk .shx:hover{background:var(--field);color:var(--ink)}
+body.desk .dial{width:220px;height:220px}
+body.desk .dial input{font-size:52px}
+body.desk .row{min-height:44px}
+body.desk .group{border-radius:12px}
+/* smaller, squarer controls overall */
+body.desk .btn{min-height:36px;padding:0 14px;border-radius:9px;font-size:13.5px}
+body.desk #startBtn{min-height:42px!important;font-size:15px!important}
+body.desk .chip{height:30px;border-radius:8px;font-size:13px}
+body.desk .seg button{height:30px;font-size:12.5px}
+body.desk .sw{width:40px;height:24px}
+body.desk .sw::after{width:20px;height:20px}
+body.desk .sw[aria-checked=true]::after{transform:translateX(16px)}
+body.desk .sw:active::after{width:24px}
+body.desk .sw[aria-checked=true]:active::after{transform:translateX(12px)}
+body.desk .num{height:30px;width:52px;border-radius:7px;font-size:14px}
+body.desk .pre{height:32px;border-radius:9px;font-size:13px}
+body.desk .field{height:36px;border-radius:9px;font-size:14px}
+body.desk .tap:active{transform:scale(.97)}
+/* home screen: a document list */
+body.desk .shelf-head{padding-left:28px}
+body.desk .brand{font-size:22px}
+body.desk #shelf{display:flex;flex-direction:column}
+body.desk .shelf-head{order:0}
+body.desk .shelf-bar{order:1;position:static;background:none;padding:6px 28px 14px;max-width:none;margin:0;justify-content:flex-start}
+body.desk .shelf-bar .btn{flex:none}
+body.desk .shelf-scroll{order:2;padding:6px 28px 40px}
+body.desk .cards{grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;max-width:none}
+body.desk .card{border-radius:10px;flex-direction:column;position:relative}
+body.desk .card .open{padding:16px 16px 14px}
+body.desk .card p{-webkit-line-clamp:4;min-height:5.6em;font-size:13.5px}
+body.desk .card .more{position:absolute;top:6px;right:4px;width:30px;height:30px;border-radius:8px}
+body.desk .card h3{padding-right:24px;font-size:15px}
+body.desk .card:hover{box-shadow:0 0 0 1.5px var(--gold-soft),0 8px 22px -14px var(--shadow)}
+body.desk .empty{max-width:none}
+body.desk .running{max-width:none;border-radius:10px}
 #share.dirty::after{content:"";position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--gold-fill)}
 /* page view: letter-size sheets drawn behind the text; spacers (never saved) push text onto the next sheet */
 .pg-sheets{display:none}
@@ -350,7 +426,7 @@ body,.top{transition:background-color 1.2s}
 body.flowing.fpage{--ground:var(--paper)}
 body.flowing.fpage .page:not(.paged){box-shadow:none}
 .top>*,.dock{transition:opacity .25s}
-body.hush .top>*,body.hush .dock{opacity:0;transition:opacity .9s}
+body.hush .top>*,body.hush .dock,body.hush.desk #fmt{opacity:0;transition:opacity .9s}
 .ed>*{transition:opacity .5s}
 body.flowing.fdim .ed>:not(.cur):not(.pgs){opacity:.3}
 body.fquiet.sprinting #pillLbl{display:none}
@@ -619,7 +695,7 @@ function hideSheet(quick){if(!openSheet)return;const el=openSheet;openSheet=null
 $("#scrim").onclick=()=>hideSheet();
 // drag a sheet down by its grabber or header to dismiss it
 document.querySelectorAll(".sheet").forEach(sh=>{let y0=null,dy=0;
-  const down=e=>{y0=e.clientY;dy=0;sh.classList.add("drag");e.target.setPointerCapture&&e.target.setPointerCapture(e.pointerId)};
+  const down=e=>{if(DESK)return;y0=e.clientY;dy=0;sh.classList.add("drag");e.target.setPointerCapture&&e.target.setPointerCapture(e.pointerId)};
   const move=e=>{if(y0==null)return;dy=Math.max(0,e.clientY-y0);sh.style.transform="translateY("+dy+"px)"};
   const up=()=>{if(y0==null)return;y0=null;sh.classList.remove("drag");if(dy>90)hideSheet();else sh.style.transform=""};
   sh.querySelectorAll(".grab,.sheet-head").forEach(h=>{h.addEventListener("pointerdown",down);h.addEventListener("pointermove",move);h.addEventListener("pointerup",up);h.addEventListener("pointercancel",up)})});
@@ -699,7 +775,7 @@ let savedRange=null;
 function saveSel(){const s=getSelection();if(s.rangeCount&&ed.contains(s.anchorNode))savedRange=s.getRangeAt(0).cloneRange()}
 function restoreSel(){ed.focus({preventScroll:true});if(savedRange&&ed.contains(savedRange.startContainer)){const s=getSelection();s.removeAllRanges();s.addRange(savedRange)}}
 ed.addEventListener("focus",()=>{$("#fmt").hidden=false;paintFmt()});
-ed.addEventListener("blur",()=>{saveSel();setTimeout(()=>{if(document.activeElement!==ed){$("#fmt").hidden=true;showPanel("main")}},150)});
+ed.addEventListener("blur",()=>{saveSel();if(DESK)return;setTimeout(()=>{if(document.activeElement!==ed){$("#fmt").hidden=true;showPanel("main")}},150)});
 document.addEventListener("selectionchange",()=>{if(document.activeElement===ed){saveSel();paintFmt()}});
 const BLOCKS="P,DIV,H1,H2,H3,LI,BLOCKQUOTE".split(",");
 function blockOf(n){while(n&&n!==ed){if(n.nodeType===1&&BLOCKS.includes(n.tagName))return n;n=n.parentNode}return null}
@@ -1305,6 +1381,12 @@ function notify(title,body){if(!DESK||!DESK.notify)return;try{if(!document.hasFo
 function paintDirty(){const sh=$("#share");if(!sh)return;sh.classList.toggle("dirty",!!(DESK&&cur&&cur.dirty))}
 if(DESK){
   document.body.classList.add("desk");
+  // the toolbar lives under the title, always visible; every panel gets a close button
+  const fm=$("#fmt");fm.hidden=false;document.querySelector("#editor .top").after(fm);
+  document.querySelectorAll(".sheet-head").forEach(h=>{const b=document.createElement("button");b.className="shx tap";b.setAttribute("aria-label","Close");b.title="Close (Esc)";b.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';b.onclick=()=>hideSheet();h.appendChild(b)});
+  document.querySelectorAll("#fmt [data-cmd=bold]").forEach(b=>b.title="Bold (Ctrl+B)");document.querySelectorAll("#fmt [data-cmd=italic]").forEach(b=>b.title="Italic (Ctrl+I)");document.querySelectorAll("#fmt [data-cmd=underline]").forEach(b=>b.title="Underline (Ctrl+U)");
+  document.querySelectorAll("#fmt [data-cmd=undo]").forEach(b=>b.title="Undo (Ctrl+Z)");document.querySelectorAll("#fmt [data-cmd=redo]").forEach(b=>b.title="Redo (Ctrl+Y)");
+  $("#pill").title="Sprint";$("#lockBtn").title="Edit lock: click to switch, hold for settings (Ctrl+Shift+E)";$("#critBtn").title="Critiques";
   $("#share").setAttribute("aria-label","Save .docx (Ctrl+S)");$("#share").title="Save (Ctrl+S) · Save As (Ctrl+Shift+S)";
   $("#share").innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v11.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 18.5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg>';
   $("#openBtn").onclick=async()=>{const f=await DESK.open();if(f)importDocx(f.data,f.name,f.path)};

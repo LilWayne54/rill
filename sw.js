@@ -1,5 +1,5 @@
 /* Keeps Rill working offline. The page is fetched fresh when online, so updates arrive on the next open. */
-var CACHE="rill-v3",FILES=["./","index.html","manifest.webmanifest","icon-180.png","icon-192.png","icon-512.png","lib/jszip.min.js","lib/mammoth.browser.min.js","fonts/ui.woff2","fonts/read.woff2","fonts/read-italic.woff2"];
+var CACHE="rill-v4",FILES=["./","index.html","manifest.webmanifest","icon-180.png","icon-192.png","icon-512.png","lib/jszip.min.js","lib/mammoth.browser.min.js","fonts/ui.woff2","fonts/read.woff2","fonts/read-italic.woff2"];
 self.addEventListener("install",function(e){e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(FILES)}).then(function(){return self.skipWaiting()}))});
 self.addEventListener("activate",function(e){e.waitUntil(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k!==CACHE}).map(function(k){return caches.delete(k)}))}).then(function(){return self.clients.claim()}))});
 self.addEventListener("fetch",function(e){
