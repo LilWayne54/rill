@@ -179,6 +179,21 @@ svg{display:block}
 .ptsrow{border-top:1px solid var(--line)}
 .help{font-size:12.5px;line-height:1.4;color:var(--muted);margin:-2px 2px 10px}
 .tlock.edit{background:var(--field)}
+/* presets: a strip of pills; the one matching your current setup is lit */
+.presets{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;padding:2px 2px 12px;margin:0 -2px}
+.presets::-webkit-scrollbar{display:none}
+.pre{flex:none;display:flex;align-items:center;height:38px;padding:0 6px 0 14px;border-radius:13px;background:var(--paper);box-shadow:0 1px 0 var(--line);font:620 14px var(--ui);white-space:nowrap}
+.pre .nm{padding-right:6px}
+.pre small{font:500 11.5px var(--ui);color:var(--muted);padding-right:6px;font-variant-numeric:tabular-nums}
+.pre.on{background:var(--gold-soft);box-shadow:none;color:var(--gold)}
+.pre.on small{color:var(--gold)}
+.pre:not(.on) .px{display:none}
+.pre:not(.on){padding-right:14px}
+.pre .px{width:24px;height:24px;border-radius:8px;display:grid;place-items:center;color:var(--faint)}
+.pre .px:active{background:var(--field);color:var(--bad)}
+.pre.add{padding:0 14px;color:var(--muted);background:transparent;box-shadow:inset 0 0 0 1.5px var(--line)}
+.psave{display:flex;gap:8px;margin:0 0 14px}
+.psave .btn{min-height:46px;padding:0 16px;border-radius:14px;font-size:14.5px}
 .flowline{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:14px 2px 10px;font:600 13px var(--ui);color:var(--muted)}
 .flowline .fs{padding:4px 10px;border-radius:9px;background:var(--field);color:var(--ink);font-variant-numeric:tabular-nums}
 .flowline .fs.sprint{background:var(--gold-fill);color:var(--gold-ink)}
@@ -450,6 +465,8 @@ body.sprinting .rill{opacity:1}
   <div class="grab"></div>
   <div class="sheet-head"><h2 id="sprintH">Sprint</h2></div>
   <div class="sheet-body">
+    <div class="presets" id="presets" role="list" aria-label="Presets"></div>
+    <div class="psave" id="psave" hidden><input class="field" id="pname" maxlength="24" placeholder="Name this setup" autocomplete="off" enterkeyhint="done"><button class="btn gold tap" id="pok">Save</button><button class="btn soft tap" id="pcancel">Cancel</button></div>
     <div id="setup">
       <div class="dialwrap">
         <div class="dial" id="dial">
@@ -487,6 +504,8 @@ body.sprinting .rill{opacity:1}
       <div class="row" id="repeatRow"><div class="lbl">Repeat<small id="repeatHelp">When the last step is over, the next sprint starts by itself.</small></div><button class="sw" role="switch" id="swRepeat" aria-checked="false" aria-label="Repeat"></button></div>
       <div class="row"><div class="lbl">Rest between sprints<small>Writing stays locked whenever a sprint isn't running. Starting a sprint unlocks it. Critiques stay open.</small></div><button class="sw" role="switch" id="swIdle" aria-checked="false" aria-label="Rest between sprints"></button></div>
     </div>
+    <div class="kick">Flow</div>
+    <div class="group" id="flowGroup"></div>
   </div>
 </div>
 
@@ -525,8 +544,6 @@ body.sprinting .rill{opacity:1}
     <div class="seg" id="lhSeg" style="margin-bottom:6px"><i></i><button data-v="1">Single</button><button data-v="1.15">1.15</button><button data-v="1.5">1.5</button><button data-v="2">Double</button></div>
     <div class="kick">Paragraphs</div>
     <div class="seg" id="paraSeg" style="margin-bottom:6px"><i></i><button data-v="space">Space between</button><button data-v="indent">Indent first line</button></div>
-    <div class="kick">Flow</div>
-    <div class="group" id="flowGroup"></div>
     <div class="kick">Layout</div>
     <div class="seg" id="layoutSeg" style="margin-bottom:6px"><i></i><button data-v="scroll">One long page</button><button data-v="pages">Separate pages</button></div>
     <div class="kick">Appearance</div>
@@ -785,7 +802,7 @@ function applyTheme(){const t=S.settings.theme,root=document.documentElement;if(
   document.querySelectorAll('meta[name="theme-color"]').forEach(m=>m.setAttribute("content",dark?"#161513":"#e6dfd3"));
   if(DESK)try{DESK.theme(dark)}catch(e){}}
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change",applyTheme);
-function openText(){saveSel();showSheet($("#textSheet"));paintFlowOpts();const f=docFmt();
+function openText(){saveSel();showSheet($("#textSheet"));const f=docFmt();
   requestAnimationFrame(()=>{seg($("#fontSeg"),f.font,v=>setDocFmt("font",v));seg($("#lhSeg"),f.lh,v=>setDocFmt("lh",v));seg($("#paraSeg"),f.para,v=>setDocFmt("para",v));seg($("#themeSeg"),S.settings.theme,setTheme);seg($("#layoutSeg"),S.settings.pages?"pages":"scroll",v=>{S.settings.pages=v==="pages";save();paginate()})});
   $("#sizeIn").value=S.settings.fs}
 $("#sizeIn").addEventListener("input",e=>{const v=+e.target.value;if(v!==S.settings.fs){S.settings.fs=v;tick();applyText()}});
@@ -1048,7 +1065,7 @@ function paintDial(){const m=dialVal,frac=(m%60)/60,full=m>=60&&m%60===0;
   const hrs=Math.floor((m-(full?1:0))/60);let dots="";for(let i=0;i<Math.min(hrs,8);i++)dots+=`<circle cx="${120-(Math.min(hrs,8)-1)*6+i*12}" cy="168" r="3.2" fill="var(--gold-fill)"/>`;$("#hourDots").innerHTML=dots;
   if(document.activeElement!==$("#dialNum"))$("#dialNum").value=m;
   document.querySelectorAll("#chips .chip").forEach(c=>c.classList.toggle("on",+c.dataset.m===m))}
-function setMinutes(m,quiet){m=Math.max(1,Math.min(600,Math.round(m)||1));if(m!==dialVal&&!quiet){tick()}dialVal=m;S.settings.minutes=m;save();paintDial();if(S.settings.steps)paintSteps()}
+function setMinutes(m,quiet){m=Math.max(1,Math.min(600,Math.round(m)||1));setTimeout(()=>{if(typeof paintPresets==="function")paintPresets()},0);if(m!==dialVal&&!quiet){tick()}dialVal=m;S.settings.minutes=m;save();paintDial();if(S.settings.steps)paintSteps()}
 (()=>{const d=$("#dial");let last=null,acc=0,lastHap=0;
   const ang=e=>{const r=d.getBoundingClientRect();return Math.atan2(e.clientX-(r.left+r.width/2),-(e.clientY-(r.top+r.height/2)))};
   d.addEventListener("pointerdown",e=>{if(e.target.closest("input"))return;e.preventDefault();d.setPointerCapture(e.pointerId);last=ang(e);acc=dialVal;d.classList.add("dragging");hap();$("#dialNum").blur()});
@@ -1059,7 +1076,36 @@ $("#dialNum").addEventListener("keydown",e=>{if(e.key==="Enter")e.target.blur()}
 $("#chips").innerHTML=[10,15,25,45,60,90].map(m=>`<button class="chip tap" data-m="${m}">${m}</button>`).join("");
 $("#chips").onclick=e=>{const c=e.target.closest(".chip");if(c){setMinutes(+c.dataset.m);hap()}};
 
-function paintSprintSheet(){const st=S.settings,run=!!S.sprint;
+/* ======================= presets ======================= */
+// A preset is a whole setup: sprint length, edit lock and its points, the steps after each sprint, Repeat, Rest between sprints.
+const PKEYS=["minutes","editLock","mode","ptsMax","mMax","mBack","steps","repeat","idleRest"];
+const snap=()=>JSON.parse(JSON.stringify(Object.fromEntries(PKEYS.map(k=>[k,S.settings[k]]))));
+const sameSetup=a=>JSON.stringify(PKEYS.map(k=>a[k]))===JSON.stringify(PKEYS.map(k=>S.settings[k]));
+if(!S.presets){S.presets=[
+  {id:"p1",name:"Warm up",s:{minutes:10,editLock:false,mode:"sprints",ptsMax:0,mMax:0,mBack:false,steps:[],repeat:false,idleRest:false}},
+  {id:"p2",name:"Deep",s:{minutes:45,editLock:true,mode:"sprints",ptsMax:0,mMax:0,mBack:false,steps:[{k:"edit",m:5},{k:"rest",m:10}],repeat:true,idleRest:false}},
+  {id:"p3",name:"Forward only",s:{minutes:25,editLock:true,mode:"always",ptsMax:30,mMax:15,mBack:true,steps:[{k:"rest",m:5}],repeat:true,idleRest:false}}];save()}
+function presetSub(p){const x=p.s;return x.minutes+"m"+(x.steps||[]).map(t=>" · "+(t.k==="rest"?"R":"E")+t.m).join("")+(x.editLock?" · locked":"")}
+function paintPresets(){const box=$("#presets");let h="";
+  for(const p of S.presets){const on=sameSetup(p.s);h+=`<div class="pre tap${on?" on":""}" role="listitem" data-p="${p.id}"><span class="nm">${esc(p.name)}</span><small>${esc(presetSub(p))}</small><button class="px" data-px="${p.id}" aria-label="Delete ${esc(p.name)}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>`}
+  const matched=S.presets.some(p=>sameSetup(p.s));
+  if(!matched&&S.presets.length<12)h+=`<button class="pre add tap" id="padd">+ Save this setup</button>`;
+  box.innerHTML=h;const on=box.querySelector(".pre.on");if(on)on.scrollIntoView({block:"nearest",inline:"nearest"})}
+$("#presets").addEventListener("click",e=>{const x=e.target.closest("[data-px]");
+  if(x){e.stopPropagation();if(x.dataset.sure){S.presets=S.presets.filter(p=>p.id!==x.dataset.px);save();thud();paintPresets()}else{x.dataset.sure=1;x.style.color="var(--bad)";hap();setTimeout(()=>{if(x.isConnected){delete x.dataset.sure;x.style.color=""}},2200)}return}
+  if(e.target.closest("#padd")){$("#psave").hidden=false;$("#presets").hidden=true;const n=$("#pname");n.value="";n.focus();tick();return}
+  const c=e.target.closest("[data-p]");if(!c)return;const p=S.presets.find(q=>q.id===c.dataset.p);if(!p)return;
+  Object.assign(S.settings,JSON.parse(JSON.stringify(p.s)));S.pts=Math.min(S.pts||0,S.settings.ptsMax);S.mpts=Math.min(S.mpts||0,S.settings.mMax);save();
+  hap();chime();paintSprintSheet();paintAll();toast(p.name+(S.sprint?": the timer length applies from your next sprint":""))});
+function closeSave(){$("#psave").hidden=true;$("#presets").hidden=false;$("#pname").blur()}
+function doSave(){const n=$("#pname").value.trim();if(!n){$("#pname").focus();return}S.presets.push({id:uid(),name:n,s:snap()});save();closeSave();hap();chime();paintPresets();toast("Saved "+n)}
+$("#pok").onclick=doSave;$("#pcancel").onclick=()=>{tick();closeSave()};
+$("#pname").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();doSave()}else if(e.key==="Escape"){e.stopPropagation();closeSave()}});
+// any setting change re-lights the matching preset
+document.querySelector("#sprintSheet .sheet-body").addEventListener("click",e=>{if(!e.target.closest("#presets,#psave"))setTimeout(paintPresets,30)});
+document.querySelector("#sprintSheet .sheet-body").addEventListener("change",()=>setTimeout(paintPresets,30));
+
+function paintSprintSheet(){const st=S.settings,run=!!S.sprint;closeSave();paintPresets();paintFlowOpts();
   $("#setup").hidden=run;$("#live").hidden=!run;$("#sprintH").textContent=run?"Sprinting":"Sprint";
   dialVal=st.minutes;paintDial();
   sw($("#swEdit"),st.editLock,v=>{st.editLock=v;save();paintLocks();paintAll()});
