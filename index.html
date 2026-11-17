@@ -339,7 +339,7 @@ body.desk .ed{-webkit-user-select:text}
 /* ===== Windows app: a desktop layout, closer to Word / Google Docs ===== */
 body.desk{font-size:13.5px}
 /* toolbar: always there, under the title, one flat row (every menu laid out flat) */
-body.desk #fmt{position:relative;z-index:4;display:flex!important;align-self:auto;flex-wrap:nowrap;margin:0 12px 0;padding:3px 8px;border-radius:12px;background:var(--paper);box-shadow:0 0 0 1px var(--line);backdrop-filter:none;-webkit-backdrop-filter:none;overflow-x:auto;scrollbar-width:none;transition:opacity .25s}
+body.desk #fmt{position:relative;z-index:4;display:flex!important;align-self:center;width:max-content;max-width:calc(100% - 24px);flex-wrap:nowrap;margin:0 auto;padding:3px 8px;border-radius:12px;background:var(--paper);box-shadow:0 0 0 1px var(--line);backdrop-filter:none;-webkit-backdrop-filter:none;overflow-x:auto;scrollbar-width:none;transition:opacity .25s}
 body.desk #fmt::-webkit-scrollbar{display:none}
 body.desk #fmt .fpanel,body.desk #fmt .fpanel[hidden]{display:flex!important;animation:none;overflow:visible;flex:none}
 body.desk #fmt .fpanel+.fpanel::before{content:"";width:1px;height:18px;background:var(--line);margin:0 6px;flex:none}
