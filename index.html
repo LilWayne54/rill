@@ -347,8 +347,8 @@ body.desk .ed{-webkit-user-select:text}
 /* ===== flow layer: while you type, everything but the words steps back ===== */
 body,.top{transition:background-color 1.2s}
 .page{transition:filter .4s,opacity .4s,box-shadow 1.2s}
-body.flowing{--ground:var(--paper)}
-body.flowing .page:not(.paged){box-shadow:none}
+body.flowing.fpage{--ground:var(--paper)}
+body.flowing.fpage .page:not(.paged){box-shadow:none}
 .top>*,.dock{transition:opacity .25s}
 body.hush .top>*,body.hush .dock{opacity:0;transition:opacity .9s}
 .ed>*{transition:opacity .5s}
@@ -570,7 +570,7 @@ body.sprinting .rill{opacity:1}
 "use strict";
 /* ======================= storage ======================= */
 const KEY="rill.v1", DOCKEY="rill.doc.";
-const DEF_SETTINGS={minutes:25,editLock:false,mode:"sprints",loopLock:10,loopFree:3,timeLock:false,timeLockMin:5,sound:true,haptics:true,theme:"auto",fs:19,lockTip:false,ptsMax:0,mMax:0,mBack:false,autoRestart:false,idleRest:false,pages:false,after:"stop",afterMin:5,repeat:false,fFade:true,fDim:true,fType:true,fQuiet:true,fAuto:true,fOver:true};
+const DEF_SETTINGS={minutes:25,editLock:false,mode:"sprints",loopLock:10,loopFree:3,timeLock:false,timeLockMin:5,sound:true,haptics:true,theme:"auto",fs:19,lockTip:false,ptsMax:0,mMax:0,mBack:false,autoRestart:false,idleRest:false,pages:false,after:"stop",afterMin:5,repeat:false,fFade:true,fDim:true,fType:true,fQuiet:true,fAuto:true,fOver:true,fPage:false};
 function fresh(){return {docs:[],critiques:[],sprints:[],settings:{...DEF_SETTINGS},sprint:null,timeLockUntil:0,pts:0}}
 let S=(()=>{try{const d=JSON.parse(localStorage.getItem(KEY));if(d&&d.docs){d.settings={...DEF_SETTINGS,...d.settings};return {...fresh(),...d}}}catch(e){}return fresh()})();
 // one-time move from the old controls (Loop / Time lock / Then restart) to Edit lock + After each sprint
@@ -817,10 +817,10 @@ function markCur(){const s=getSelection();if(!s.rangeCount||!ed.contains(s.ancho
   if(!n||n.nodeType!==1||n.classList.contains("cur"))return;ed.querySelectorAll(".cur").forEach(x=>x.classList.remove("cur"));n.classList.add("cur")}
 function flowTick(){const st=S.settings,B=document.body,typing=typingNow(),inEd=!$("#editor").hidden;
   const run=!!S.sprint&&!!cur&&S.sprint.docId===cur.id&&inEd;
-  B.classList.toggle("flowing",typing);B.classList.toggle("fdim",!!st.fDim);B.classList.toggle("fquiet",!!st.fQuiet);
+  B.classList.toggle("flowing",typing);B.classList.toggle("fdim",!!st.fDim);B.classList.toggle("fquiet",!!st.fQuiet);B.classList.toggle("fpage",!!st.fPage);
   B.classList.toggle("hush",typing&&!!st.fFade&&now()>revealUntil);B.classList.toggle("sprinting",run);
   if(typing!==flowOn){flowOn=typing;if(typing)markCur();
-    if(DESK&&DESK.overlay){const cs=getComputedStyle(document.documentElement),g=k=>cs.getPropertyValue(k).trim();try{DESK.overlay(g(typing?"--paper":"--ground"),g("--ink"))}catch(e){}}}
+    if(DESK&&DESK.overlay){const cs=getComputedStyle(document.documentElement),g=k=>cs.getPropertyValue(k).trim();try{DESK.overlay(g(typing&&st.fPage?"--paper":"--ground"),g("--ink"))}catch(e){}}}
   momentum*=.93;
   if(run){const sp=S.sprint,tot=sp.endsAt-sp.startedAt,f=$("#rillFill");f.style.width=Math.min(100,(now()-sp.startedAt)/tot*100)+"%";f.style.setProperty("--mo",Math.min(1,momentum/14).toFixed(2));$("#rill").classList.toggle("over",now()>sp.endsAt)}}
 setInterval(flowTick,250);
@@ -832,9 +832,9 @@ document.addEventListener("pointermove",e=>{if(e.pointerType!=="mouse")return;if
 document.addEventListener("pointerdown",e=>{if(!document.body.classList.contains("hush"))return;revealUntil=now()+3000;document.body.classList.remove("hush");
   if(e.target.closest(".top,.dock")){e.preventDefault();e.stopPropagation();swallow=true;setTimeout(()=>{swallow=false},600)}},true); // a tap on faded controls only brings them back
 document.addEventListener("click",e=>{if(swallow){swallow=false;e.preventDefault();e.stopPropagation()}},true);
-const FLOW_OPTS=[["fFade","Fade the controls","The bars fade while you type. Move the mouse, tap or pause to bring them back."],["fDim","Dim other paragraphs","Only the paragraph you're writing stays bright."],["fType","Typewriter scrolling","The line you're on holds still and the page moves under it."],["fQuiet","Hide the clock and counts","During a sprint, no countdown or word count. A thin line across the top shows the time instead."],["fAuto","Start when I start typing","Your first keystroke starts the sprint. No setup."],["fOver","Don't cut me off","If you're mid-thought when time runs out, the sprint waits until you pause for 5 seconds (10 minutes at most)."]];
+const FLOW_OPTS=[["fFade","Fade the controls","The bars fade while you type. Move the mouse, tap or pause to bring them back."],["fPage","Fade the background","While you type, the background turns the page's colour, so the page edge disappears."],["fDim","Dim other paragraphs","Only the paragraph you're writing stays bright."],["fType","Typewriter scrolling","The line you're on holds still and the page moves under it."],["fQuiet","Hide the clock and counts","During a sprint, no countdown or word count. A thin line across the top shows the time instead."],["fAuto","Start when I start typing","Your first keystroke starts the sprint. No setup."],["fOver","Don't cut me off","If you're mid-thought when time runs out, the sprint waits until you pause for 5 seconds (10 minutes at most)."]];
 function paintFlowOpts(){$("#flowGroup").innerHTML=FLOW_OPTS.map(([k,l,h])=>`<div class="row"><div class="lbl">${l}<small>${h}</small></div><button class="sw" role="switch" data-f="${k}" aria-label="${l}"></button></div>`).join("");
-  $("#flowGroup").querySelectorAll("[data-f]").forEach(b=>sw(b,S.settings[b.dataset.f],v=>{S.settings[b.dataset.f]=v;save();flowTick()}))}
+  $("#flowGroup").querySelectorAll("[data-f]").forEach(b=>sw(b,S.settings[b.dataset.f],v=>{S.settings[b.dataset.f]=v;save();flowOn=null;flowTick()}))}
 
 /* ======================= stats ======================= */
 function openStats(){flush();const t=ed.innerText||"";const w=countWords(t);const paras=[...ed.querySelectorAll("p,div,h1,h2,h3,li")].filter(b=>!b.querySelector("p,div,h1,h2,h3,li")&&b.textContent.trim()).length;
